@@ -72,6 +72,11 @@ db.getConnection((err, connection) => {
 //   console.log('Inserted');
 // });
 
+// db.query(`ALTER TABLE data_types ADD network_name VARCHAR(20)`, (err, result) => {
+//   if (err) throw err;
+//   console.log('Updated');
+// });
+
 //Fetch data network
 app.get('/network', (req, res) => {
     const sql = `SELECT * FROM networks WHERE is_active = 'active'`;
@@ -87,7 +92,7 @@ app.get('/network', (req, res) => {
 //Fetch data plan type
 app.post('/data/types', (req, res) => {
   const { choosenNetwork } = req.body;
-  const sql =   `SELECT * FROM data_types WHERE network_name = ? AND is_active = 'active'`;
+  const sql =   `SELECT * FROM data_types WHERE d_id = ? AND is_active = 'active'`;
   db.query(sql, [choosenNetwork], (err, result) => {
     if (err) {
       console.error(err);
