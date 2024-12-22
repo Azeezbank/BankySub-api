@@ -7,6 +7,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 //import JWT from 'jsonwebtoken';
 //import multer from 'multer';
+import axios from "axios";
 
 const port = process.env.PORT || 3006;
 
@@ -72,7 +73,7 @@ db.getConnection((err, connection) => {
 //   console.log('Inserted');
 // });
 
-// db.query(`ALTER TABLE data_types ADD network_name VARCHAR(20)`, (err, result) => {
+// db.query(`ALTER TABLE networks ADD id INT`, (err, result) => {
 //   if (err) throw err;
 //   console.log('Updated');
 // });
@@ -92,7 +93,7 @@ app.get('/network', (req, res) => {
 //Fetch data plan type
 app.post('/data/types', (req, res) => {
   const { choosenNetwork } = req.body;
-  const sql =   `SELECT * FROM data_types WHERE d_id = ? AND is_active = 'active'`;
+  const sql =   `SELECT * FROM data_types WHERE network_name = ? AND is_active = 'active'`;
   db.query(sql, [choosenNetwork], (err, result) => {
     if (err) {
       console.error(err);
@@ -113,6 +114,50 @@ app.post('/data/plans', (req, res) => {
     }
     res.status(200).json(result);
   });
+});
+
+//Fetch data from API
+app.post('/api/data=bundle', async (req, res) => {
+  
+  const { DataPrice, mobileNumber, choosenNetwork } = req.body;
+  try {
+  const sql = `SELECT * FROM data_plans WHERE price = ? AND is_active = 'active'`;
+  db.query(sql, [DataPrice], async (err, result) => {
+    if (err) {
+      console.error(err.message)
+      return res.status(500).json({error: 'Data query error'})
+    }
+    if (result.length === 0) {
+      return res.status(404).json({error: 'Plan not founf'});
+    }
+      
+    const id  = result[0].id
+
+    const requestBody = {
+      'network': choosenNetwork,
+      'mobile_number': mobileNumber,
+      'plan': id,
+      'Ported_number': true,
+    };
+
+    const headers = {
+      Authorization: process.env.API_TOKEN,
+      'Content-Type': 'application/json'
+    };
+
+    try {
+      const response = await axios.post('https://alrahuzdata.com.ng/api/data/', requestBody, {headers});
+      res.status(200).json(response.data);
+    } catch (err) {
+      console.error("Failed to fetch from API", err.response?.data || err.message);
+      res.status(500).json({error: 'Failed to fetch data from external API'});
+    }
+  });
+
+  } catch (err) {
+    console.error('Server error', err.message);
+    res.status(500).json({error: 'Server error'});
+  }
 });
 
 
