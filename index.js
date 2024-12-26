@@ -130,11 +130,16 @@ app.post('/api/data=bundle', async (req, res) => {
     if (result.length === 0) {
       return res.status(404).json({error: 'Plan not founf'});
     }
-      
-    const id  = result[0].id
+    db.query(`SELECT id FROM networks WHERE name = ?`, [choosenNetwork], async (err, results) => {
+      if (err) {
+        return res.status(500).json({error: 'Field to select network'});
+      }
+      const networkId = results[0].id;
+
+     const id  = result[0].id
 
     const requestBody = {
-      'network': choosenNetwork,
+      'network': networkId,
       'mobile_number': mobileNumber,
       'plan': id,
       'Ported_number': true,
@@ -153,12 +158,69 @@ app.post('/api/data=bundle', async (req, res) => {
       res.status(500).json({error: 'Failed to fetch data from external API'});
     }
   });
-
+});
   } catch (err) {
     console.error('Server error', err.message);
     res.status(500).json({error: 'Server error'});
   }
 });
+
+//Airtime section
+//Create Airtime network table
+const sql = `CREATE TABLE IF NOT EXISTS AirtimeN(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active', id INT)`;
+db.query(sql, (err, result) => {
+  if (err) throw err;
+  console.log('Airtime network Table created')
+});
+
+//Insert into Airtime network table
+// db.query(`INSERT INTO AirtimeN(name, id) VALUES('GLO', 2)`, (err, result) => {
+//   if (err) throw err;
+//   console.log('Inserted');
+// });
+
+//Create Airtime type table
+const AirtimeT = `CREATE TABLE IF NOT EXISTS AirtimeT(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`;
+db.query(AirtimeT, (err, result) => {
+  if (err) throw err;
+  console.log('Airtime Type Table created')
+});
+
+//Insert into Airtime type table
+// db.query(`INSERT INTO AirtimeT(name) VALUES('VTU')`, (err, result) => {
+//   if (err) throw err;
+//   console.log('Inserted');
+// });
+
+
+// Fetch Airtime network
+app.get('/api/airtimeN', (req, res) => {
+  const sql = `SELECT * FROM AirtimeN WHERE is_active = 'active'`;
+     db.query(sql, (err, result) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({message: 'Server unavailable'});
+      }
+      res.status(200).json(result);
+    });
+});
+
+//Fetch Airtime type
+app.get('/api/airtimeT', (req, res) => {
+  const sql = `SELECT * FROM AirtimeT WHERE is_active = 'active'`;
+  db.query(sql, (err, result) => {
+    if (err) {
+      return res.status(500).json({error: 'Unable to select Airtime type'});
+    }
+    if (result.length === 0) {
+      return res.status(404).json({error: 'Airtime type not found'});
+    }
+    res.status(200).json(result);
+  });
+});
+
+
+//Fetch Airtime from API
 
 
 app.listen(port, () => {
