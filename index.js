@@ -3,9 +3,9 @@ import express from "express";
 import dotenv from "dotenv";
 //import nodemailer from "nodemailer";
 import cors from "cors";
-//import bcrypt from "bcryptjs";
+import bcrypt from 'bcrypt';
 import cookieParser from "cookie-parser";
-//import JWT from 'jsonwebtoken';
+import JWT from 'jsonwebtoken';
 //import multer from 'multer';
 import axios from "axios";
 
@@ -45,8 +45,13 @@ db.getConnection((err, connection) => {
   connection.release();
 });
 
+//Create table users
+db.query(`CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, user_pass VARCHAR(255), username VARCHAR(255), user_email VARCHAR(255), user_registered DATETIME DEFAULT CURRENT_TIMESTAMP, user_balance DECIMAL(10,2) DEFAULT 0.00)`, (err, result) => {
+    if (err) throw err;
+    console.log("Table networks created");
+});
 
-// db.(`CREATE TABLE IF NOT EXISTS networks(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
+// db.query(`CREATE TABLE IF NOT EXISTS networks(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //     if (err) throw err;
 //     console.log("Table networks created");
 // });
@@ -77,6 +82,78 @@ db.getConnection((err, connection) => {
 //   if (err) throw err;
 //   console.log('Updated');
 // });
+
+
+//Route to register user
+app.post("/register", async (req, res) => {
+  const { password, username, email } = req.body;
+
+  db.query(
+    `SELECT * FROM users WHERE user_email = ?`,
+    [email],
+    async (err, result) => {
+      if (err) {
+        console.error("Error checking user", err);
+        return res.status(500).json({ message: "Error checking user" });
+      }
+      if (result.length > 0) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const sql = `INSERT INTO users (user_pass, username, user_email) VALUES (?, ?, ?);`;
+
+        db.query(
+          sql,
+          [hashedPassword, username, email],
+          (err, result) => {
+            if (err) {
+              console.error("Error registering user", err);
+              return res.status(401).json({ message: "Error inserting user" });
+            }
+            return res
+              .status(200)
+              .json({ message: "User registered successfully" });
+          }
+        );
+      } catch (hashError) {
+        console.error("Error hashing password", hashError);
+        return res.status(500).json({ message: "Error processing request" });
+      }
+    }
+  );
+});
+
+
+//user login
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+
+  db.query("SELECT * FROM users WHERE username = ?", [username], (err, results) => {
+    if (err || results.length === 0)
+      return res.status(404).json({ message: "User not found" });
+
+    const user = results[0];
+    const passwordIsValid = bcrypt.compareSync(password, user.user_pass);
+
+    if (!passwordIsValid)
+      return res.status(401).json({ message: "Please enter a correct username and password. Note that both fields may be case-sensitive" });
+
+    const token = JWT.sign({ id: user.d_id }, process.env.JWT_SECRET, {
+      expiresIn: "10m",
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+
+    res.status(200).json({ message: "login successful" });
+  });
+});
 
 //Fetch data network
 app.get('/network', (req, res) => {
@@ -192,6 +269,27 @@ db.query(AirtimeT, (err, result) => {
 //   console.log('Inserted');
 // });
 
+//Middleware to protect routes
+const authenticateToken = (req, res, next) => {
+  const token = req.cookies.token;
+
+  if (!token) {
+    return res.status(401).json({ message: "unauthorized" });
+  }
+
+  JWT.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: "invalid token" });
+    }
+    req.user = user;
+    next();
+  });
+};
+
+//Protected route
+app.get('/protected', authenticateToken, (req, res) => {
+  res.status(200).json({message: 'Authorized'})
+});
 
 // Fetch Airtime network
 app.get('/api/airtimeN', (req, res) => {
@@ -221,7 +319,39 @@ app.get('/api/airtimeT', (req, res) => {
 
 
 //Fetch Airtime from API
+app.post('/api/airtime/topup', async (req, res) => {
+  const { airtimeNChoosen, airtimeTChoosen, mobileN, amount } = req.body;
+  const airtimeBody = {
+    'network': airtimeNChoosen,
+    'amount': amount,
+    'mobile_number': mobileN,
+    'Ported_number': true,
+    'airtime_type': airtimeTChoosen
+  };
 
+  const headers = {
+    'Authorization': process.env.API_TOKEN,
+    'Content-Type': 'application/json'
+    }
+  
+  try {
+    const response = await axios.post('https://alrahuzdata.com.ng/api/topup/', airtimeBody, {headers});
+    res.status(200).json(response.data);
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).json({error: 'Failed to fetch Airtime from external API'})
+  }
+});
+
+//Logout route
+app.post("/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  });
+  res.json({ message: "logout successfully" });
+});
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`)
