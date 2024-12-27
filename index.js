@@ -343,6 +343,54 @@ app.post('/api/airtime/topup', async (req, res) => {
   }
 });
 
+//Payment connection
+app.post('/dedicated/account', async (req, res) => {
+  const { MON_API_KEY, MON_SECRET, MON_CONTRACT, MON_BASE_URL } = process.env;
+  const authenticate = async () => {
+    try {
+      const response = await axios.post(`${MON_BASE_URL}/auth/login`, {}, { auth: {username: MON_API_KEY, password: MON_SECRET},});
+      return response.data.responseBody.accessToken;
+    } catch (err) {
+      console.error('Authentication failed', err.message)
+    }
+  };
+
+  //Create dedicated account number
+  const creatDedicatedAccount = async (user) => {
+    try {
+      const userid = req.user.d_id;
+      const accountName = 'Banky';
+      const sql =`SELECT user_email, username FROM users WHERE d_id = ?`;
+      db.query(sql, [userid], async (err, result) => {
+        if (err) {
+          console.log('Failed to select user', err);
+          return;
+        }
+        const userd = result[0];
+      
+
+      const token = await authenticate();
+      const response = await axios.post(`${MON_BASE_URL}/bank-transfer/reserved-accounts`, {
+        accountReference: userid,
+        accountName: accountName,
+        currencyCode: MON_CONTRACT,
+        customerEmail: userd.user_email,
+        customerName: userd.username,
+      },
+    {headers: {Authorization: `Bearer ${token}`,
+  },
+}
+);
+res.status(200).json(response.data.responseBody);
+console.log(response.data.responseBody);
+return response.data.responseBody;
+      });
+      } catch (err) {
+        console.error('Error creating dedicated account', err.message);
+      }
+    }
+});
+
 //Logout route
 app.post("/logout", (req, res) => {
   res.clearCookie("token", {
