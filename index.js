@@ -461,6 +461,20 @@ app.get('/api/user_info', authenticateToken, (req, res) => {
   });
 });
 
+//Payment webhook
+app.post('/monnify/webhook', (req, res) => {
+  const payload = req.body;
+  console.log(payload);
+  res.status(200).send('Webhook proccessed')
+});
+
+//env
+// API_TOKEN=Token 373a21ef2d899a08005879469faffa1e682c6372
+// MON_API_KEY=MK_PROD_A58QFTHS2G
+// MON_CONTRACT_CODE=068760777648
+// MON_SECRET_KEY=M5PA5VJNE2TCF154YQJW7GU48LL1AKCP
+// MON_BASE_URL=https://api.monnify.com
+
 //Logout route
 app.post("/logout", (req, res) => {
   res.clearCookie("token", {
