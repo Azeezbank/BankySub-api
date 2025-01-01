@@ -493,9 +493,8 @@ app.post('/monnify/webhook', async (req, res) => {
        const prevBalanc = prevBalance[0].user_balance;
         const newBalance = prevBalanc + netAmount;
        
-        await db.execute(`UPDATE users SET user_balance = ? WHERE d_id = ?`, [newBalance, reference]);
+        await db.execute(`UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`, [newBalance, prevBalanc, reference]);
        
-        await db.execute(`UPDATE users SET prev_balance = ? WHERE d_id = ?`, [prevBalanc]);
        } catch (err) {
       console.error('Error inserting payment:', err);
       throw err;
