@@ -466,7 +466,7 @@ app.get('/api/user_info', authenticateToken, (req, res) => {
 });
 
 //Payment webhook
-app.post('/monnify/webhook', (req, res) => {
+app.post('/monnify/webhook', async (req, res) => {
   const payload = req.body;
   const paymentHist = async (payload) => {
     const eventType = payload.eventType;
@@ -481,23 +481,30 @@ app.post('/monnify/webhook', (req, res) => {
     const charges = (chargesPercent / 100) * amountPaid;
     const netAmount = amountPaid - charges;
 
-    try {
+     try {
       const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
-      db.query(sql, [reference, eventType, paymentRef, paidOn, netAmount, paymentMethod, paymentStatus], async (err, result) => {
+      await db.query(sql, [reference, eventType, paymentRef, paidOn, netAmount, paymentMethod, paymentStatus], (err, result) => {
         if (err) {
           return res.status(500).json({message: 'Error inserting payment record'});
         }
         const [prevBalance] = await db.query(`SELECT user_balance FROM user WHERE d_id = ?`, [reference]);
         const newBalance = prevBalance + netAmount;
-        await db.query(`UPDATE users SET user_balance = ? WHERE d_id = ?`, [newBalance, reference]]);
-        db.query(`UPDATE users SET prev_balance ? WHERE d_id = ?`, [prevBalance]);
-      })
+        await db.execute(`UPDATE users SET user_balance = ? WHERE d_id = ?`, [newBalance, reference]]);
+        db.execute(`UPDATE users SET prev_balance = ? WHERE d_id = ?`, [prevBalance]);
+      });
     } catch (err) {
       console.error(err);
       res.status(500).json({message: 'Error inserting record'})
-    }
+   }
   };
+
+  try {
+  await paymentHist(payload);
   res.status(200).send('Webhook proccessed')
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({message: 'Error inserting record'})
+  }
 });
 
 
