@@ -468,7 +468,15 @@ app.get('/api/user_info', authenticateToken, (req, res) => {
 //Payment webhook
 app.post('/monnify/webhook', (req, res) => {
   const payload = req.body;
-  console.log(payload);
+  const logTransHist = (payload) => {
+    const eventType = payload.eventType;
+    const reference = payload.eventData.product.reference;
+    const paymentRef = payload.eventData.paymentReference;
+    const paidOn = payload.eventData.paidOn;
+    const amountPaid = payload.eventData.amountPaid;
+    const paymentMethod = payload.eventData.paymentMethod;
+    const paymentStatus = payload.eventData.paymentStatus;
+  }
   res.status(200).send('Webhook proccessed')
 });
 
