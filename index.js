@@ -478,7 +478,7 @@ app.post('/monnify/webhook', (req, res) => {
     const paymentStatus = payload.eventData.paymentStatus;
 
     const chargesPercent = 2;
-    const charges = (transaCharge / 100) * amountPaid;
+    const charges = (chargesPercent / 100) * amountPaid;
     const netAmount = amountPaid - charges;
 
     try {
@@ -489,7 +489,7 @@ app.post('/monnify/webhook', (req, res) => {
         }
         const [prevBalance] = await db.query(`SELECT user_balance FROM user WHERE d_id = ?`, [reference]);
         const newBalance = prevBalance + netAmount;
-        await db.query(`UPDATE users SET user_balance ? WHERE d_id = ?`, [newBalance]);
+        await db.query(`UPDATE users SET user_balance = ? WHERE d_id = ?`, [newBalance, reference]]);
         db.query(`UPDATE users SET prev_balance ? WHERE d_id = ?`, [prevBalance]);
       })
     } catch (err) {
