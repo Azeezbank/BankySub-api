@@ -468,7 +468,7 @@ app.get('/api/user_info', authenticateToken, (req, res) => {
 //Payment webhook
 app.post('/monnify/webhook', (req, res) => {
   const payload = req.body;
-  const logTransHist = (payload) => {
+  const paymentHist = async (payload) => {
     const eventType = payload.eventType;
     const reference = payload.eventData.product.reference;
     const paymentRef = payload.eventData.paymentReference;
@@ -476,6 +476,10 @@ app.post('/monnify/webhook', (req, res) => {
     const amountPaid = payload.eventData.amountPaid;
     const paymentMethod = payload.eventData.paymentMethod;
     const paymentStatus = payload.eventData.paymentStatus;
+
+    try {
+      const sql = `INSERT INTO paymentHist(id, eventType, paymentRf, paidOn, amo)`;
+    }
   }
   res.status(200).send('Webhook proccessed')
 });
