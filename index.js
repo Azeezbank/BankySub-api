@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import JWT from "jsonwebtoken";
 //import multer from 'multer';
 import axios from "axios";
+import crypto from 'crypto';
 
 const port = process.env.PORT || 3006;
 
