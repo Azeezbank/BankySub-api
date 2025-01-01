@@ -483,13 +483,20 @@ app.post('/monnify/webhook', (req, res) => {
 
     try {
       const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
-      db.query(sql, [reference, eventType, paymentRef, paidOn, netAmount, paymentMethod, paymentStatus], (err, result) => {
+      db.query(sql, [reference, eventType, paymentRef, paidOn, netAmount, paymentMethod, paymentStatus], async (err, result) => {
         if (err) {
           return res.status(500).json({message: 'Error inserting payment record'});
         }
+        const [prevBalance] = await db.query(`SELECT user_balance FROM user WHERE d_id = ?`, [reference]);
+        const newBalance = prevBalance + netAmount;
+        await db.query(`UPDATE users SET user_balance ? WHERE d_id = ?`, [newBalance]);
+        db.query(`UPDATE users SET prev_balance ? WHERE d_id = ?`, [prevBalance]);
       })
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({message: 'Error inserting record'})
     }
-  }
+  };
   res.status(200).send('Webhook proccessed')
 });
 
