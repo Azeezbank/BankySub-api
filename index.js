@@ -398,7 +398,7 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
     const response = await axios.post(
       `${MON_BASE_URL}/api/v1/bank-transfer/reserved-accounts`,
       {
-        'accountReference': `user_${userid}ref`,
+        'accountReference': `${userid}`,
         'accountName': "Banky",
         'currencyCode': "NGN",
         'contractCode': MON_CONTRACT_CODE,
@@ -419,8 +419,9 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
     const acctNo = response.data.responseBody.accountNumber;
     const acctName = response.data.responseBody.accountName;
     const bankName = response.data.responseBody.bankName;
+    const refrence = response.data.responseBody.accountRefrence;
     const sql = `INSERT INTO userBankDetails1 (id, acctNo, acctName, bankName) VALUES (?, ?, ?, ?)`;
-    db.query(sql, [userid, acctNo, acctName, bankName], (err, result) => {
+    db.query(sql, [refrence, acctNo, acctName, bankName], (err, result) => {
       if (err) {
         console.log('Error inserting bank details')
         return res.status(500).json({message: 'Error inserting bank details'});
@@ -441,6 +442,9 @@ db.query(sql, [userid], (err, result) => {
   if (err) {
     console.error(err)
     return res.status(500).json({message: 'Error selecting user bank details'})
+  }
+  if (result.length === 0) {
+    return res.status(404).json({message: 'No details found'})
   }
   res.status(200).json(result);
 });
