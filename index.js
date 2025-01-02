@@ -466,6 +466,15 @@ app.get('/api/user_info', authenticateToken, (req, res) => {
   });
 });
 
+//Payment transaction table
+const sql2 = `CREATE TABLE IF NOT EXISTS paymentHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, event_type VARCHAR(255), payment_ref VARCHAR(255), paid_on DATETIME, amount DECIMAL(10, 2), payment_method VARCHAR(255), payment_status VARCHAR(255))`;
+db.execute(sql2, (err, result) => {
+  if (err) {
+    console.error(err)
+  }
+  console.log('paymentHist table created')
+});
+
 //Payment webhook
 app.post('/monnify/webhook', async (req, res) => {
   const payload = req.body;
@@ -498,17 +507,19 @@ app.post('/monnify/webhook', async (req, res) => {
 
      try {
       const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
+      
       await db.execute(sql, [reference, eventType, paymentRef, paidOn, netAmount, paymentMethod, paymentStatus]);
         
         const [prevBalance] = await db.query(`SELECT user_balance FROM user WHERE d_id = ?`, [reference]);
-       if (prevBalance.length === 0) {
+       
+        if (prevBalance.length === 0) {
          throw new Error('User not found')
        }
 
        const prevBalanc = prevBalance[0].user_balance;
         const newBalance = prevBalanc + netAmount;
        
-        await db.execute(`UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`, [newBalance, prevBalanc, reference]);
+        db.execute(`UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`, [newBalance, prevBalanc, reference]);
        
        } catch (err) {
       console.error('Error inserting payment:', err);
