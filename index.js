@@ -8,7 +8,7 @@ import cookieParser from "cookie-parser";
 import JWT from "jsonwebtoken";
 //import multer from 'multer';
 import axios from "axios";
-import crypto from 'crypto';
+import crypto from "crypto";
 
 const port = process.env.PORT || 3006;
 
@@ -34,7 +34,7 @@ const db = mysql.createPool({
   database: process.env.DB_DATABASE,
   waitForConnections: true,
   queueLimit: 0,
-  connectionLimit: 10,
+  connectionLimit: 20,
 });
 
 db.getConnection((err, connection) => {
@@ -52,6 +52,7 @@ db.query(
   (err, result) => {
     if (err) throw err;
     console.log("Table networks created");
+    connection.release();
   }
 );
 
@@ -84,13 +85,16 @@ db.query(
 //   if (err) throw err;
 //   console.log('Updated');
 // });
- 
 
 //User account details
-db.query(`CREATE TABLE IF NOT EXISTS userBankDetails1(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), acctNo VARCHAR(255), acctName VARCHAR(255), bankName VARCHAR(255), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
+db.query(
+  `CREATE TABLE IF NOT EXISTS userBankDetails1(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), acctNo VARCHAR(255), acctName VARCHAR(255), bankName VARCHAR(255), is_active ENUM('active', 'disabled') DEFAULT 'active')`,
+  async (err, result) => {
     if (err) throw err;
     console.log("BANK CREATED");
-  });
+    connection.release();
+  }
+);
 //Route to register user
 app.post("/register", async (req, res) => {
   const { password, username, email } = req.body;
@@ -127,6 +131,7 @@ app.post("/register", async (req, res) => {
       }
     }
   );
+  connection.release();
 });
 
 //user login
@@ -144,12 +149,10 @@ app.post("/login", (req, res) => {
       const passwordIsValid = bcrypt.compareSync(password, user.user_pass);
 
       if (!passwordIsValid)
-        return res
-          .status(401)
-          .json({
-            message:
-              "Please enter a correct username and password. Note that both fields may be case-sensitive",
-          });
+        return res.status(401).json({
+          message:
+            "Please enter a correct username and password. Note that both fields may be case-sensitive",
+        });
 
       const token = JWT.sign({ id: user.d_id }, process.env.JWT_SECRET, {
         expiresIn: "10m",
@@ -162,6 +165,7 @@ app.post("/login", (req, res) => {
       });
 
       res.status(200).json({ message: "login successful" });
+      connection.release();
     }
   );
 });
@@ -175,6 +179,7 @@ app.get("/network", (req, res) => {
       return res.status(500).json({ message: "Server unavailable" });
     }
     res.status(200).json(result);
+    connection.release();
   });
 });
 
@@ -188,6 +193,7 @@ app.post("/data/types", (req, res) => {
       return res.status(500).json({ Error: "Failed to select network" });
     }
     res.status(200).json(result);
+    connection.release();
   });
 });
 
@@ -201,6 +207,7 @@ app.post("/data/plans", (req, res) => {
       return res.status(500).json({ Error: "Failed to select data type" });
     }
     res.status(200).json(result);
+    connection.release();
   });
 });
 
@@ -256,6 +263,7 @@ app.post("/api/data=bundle", async (req, res) => {
               .status(500)
               .json({ error: "Failed to fetch data from external API" });
           }
+          connetion.release();
         }
       );
     });
@@ -271,6 +279,7 @@ const sql = `CREATE TABLE IF NOT EXISTS AirtimeN(d_id INT PRIMARY KEY AUTO_INCRE
 db.query(sql, (err, result) => {
   if (err) throw err;
   console.log("Airtime network Table created");
+  connection.release();
 });
 
 //Insert into Airtime network table
@@ -284,6 +293,7 @@ const AirtimeT = `CREATE TABLE IF NOT EXISTS AirtimeT(d_id INT PRIMARY KEY AUTO_
 db.query(AirtimeT, (err, result) => {
   if (err) throw err;
   console.log("Airtime Type Table created");
+  connection.release();
 });
 
 //Insert into Airtime type table
@@ -322,6 +332,7 @@ app.get("/api/airtimeN", (req, res) => {
       return res.status(500).json({ message: "Server unavailable" });
     }
     res.status(200).json(result);
+    connection.release();
   });
 });
 
@@ -336,6 +347,7 @@ app.get("/api/airtimeT", (req, res) => {
       return res.status(404).json({ error: "Airtime type not found" });
     }
     res.status(200).json(result);
+    connection.release();
   });
 });
 
@@ -370,8 +382,11 @@ app.post("/api/airtime/topup", async (req, res) => {
   }
 });
 
-const { MON_API_KEY, MON_SECRET_KEY, MON_CONTRACT_CODE, MON_BASE_URL } = process.env;
-const credentials = Buffer.from(`${MON_API_KEY}:${MON_SECRET_KEY}`).toString('base64');
+const { MON_API_KEY, MON_SECRET_KEY, MON_CONTRACT_CODE, MON_BASE_URL } =
+  process.env;
+const credentials = Buffer.from(`${MON_API_KEY}:${MON_SECRET_KEY}`).toString(
+  "base64"
+);
 
 const authenticate = async () => {
   const response = await axios.post(
@@ -380,7 +395,7 @@ const authenticate = async () => {
     {
       headers: {
         Authorization: `Basic ${credentials}`,
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
     }
   );
@@ -388,25 +403,23 @@ const authenticate = async () => {
 };
 //Payment connection
 app.post("/dedicated/account", authenticateToken, async (req, res) => {
-  
   //Create dedicated account number
   const userid = req.user.id;
   console.log(userid);
   try {
     const token = await authenticate();
 
-
     const response = await axios.post(
       `${MON_BASE_URL}/api/v1/bank-transfer/reserved-accounts`,
       {
-        'accountReference': `${userid}`,
-        'accountName': "Banky",
-        'currencyCode': "NGN",
-        'contractCode': MON_CONTRACT_CODE,
-        'customerEmail': "bankoleazeezb98@gmail.com",
-        'nin': '46182096878',
-        'customerName': "Bank",
-        'getAllAvailableBanks': true,
+        accountReference: `${userid}`,
+        accountName: "Banky",
+        currencyCode: "NGN",
+        contractCode: MON_CONTRACT_CODE,
+        customerEmail: "bankoleazeezb98@gmail.com",
+        nin: "46182096878",
+        customerName: "Bank",
+        getAllAvailableBanks: true,
       },
       {
         headers: {
@@ -424,11 +437,14 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
     const sql = `INSERT INTO userBankDetails1 (id, acctNo, acctName, bankName) VALUES (?, ?, ?, ?)`;
     db.query(sql, [refrence, acctNo, acctName, bankName], (err, result) => {
       if (err) {
-        console.log('Error inserting bank details')
-        return res.status(500).json({message: 'Error inserting bank details'});
+        console.log("Error inserting bank details");
+        return res
+          .status(500)
+          .json({ message: "Error inserting bank details" });
       }
-      console.log('Bank details innserted');
-    })
+      console.log("Bank details innserted");
+      connection.release();
+    });
     return response.data.responseBody;
   } catch (err) {
     console.error(err.response?.data || err.message);
@@ -436,33 +452,37 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
 });
 
 //Select user bank details
-app.post('/api/user_account', authenticateToken, (req, res) => {
+app.post("/api/user_account", authenticateToken, (req, res) => {
   const userid = req.user.id;
-const sql = `SELECT * FROM userBankDetails1 WHERE id = ? AND is_active = 'active'`;
-db.query(sql, [userid], (err, result) => {
-  if (err) {
-    console.error(err)
-    return res.status(500).json({message: 'Error selecting user bank details'})
-  }
-  if (result.length === 0) {
-    return res.status(404).json({message: 'No details found'})
-  }
-  res.status(200).json(result);
-});
+  const sql = `SELECT * FROM userBankDetails1 WHERE id = ? AND is_active = 'active'`;
+  db.query(sql, [userid], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: "Error selecting user bank details" });
+    }
+    if (result.length === 0) {
+      return res.status(404).json({ message: "No details found" });
+    }
+    res.status(200).json(result);
+    connection.release();
+  });
 });
 
 //Select user details
-app.get('/api/user_info', authenticateToken, (req, res) => {
+app.get("/api/user_info", authenticateToken, (req, res) => {
   const userid = req.user.id;
   const sql = `SELECT username, user_balance FROM users WHERE d_id = ?`;
   db.query(sql, [userid], (err, result) => {
     if (err) {
-      return res.status(500).json({message: 'Error selecting user'});
+      return res.status(500).json({ message: "Error selecting user" });
     }
     if (result.length === 0) {
-      return res.status(404).json({message: 'User not found'});
+      return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json(result)
+    res.status(200).json(result);
+    connection.release();
   });
 });
 
@@ -470,30 +490,31 @@ app.get('/api/user_info', authenticateToken, (req, res) => {
 const sql2 = `CREATE TABLE IF NOT EXISTS paymentHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, event_type VARCHAR(255), payment_ref VARCHAR(255), paid_on DATETIME, amount DECIMAL(10, 2), payment_method VARCHAR(255), payment_status VARCHAR(255))`;
 db.execute(sql2, (err, result) => {
   if (err) {
-    console.error(err)
+    console.error(err);
   }
-  console.log('paymentHist table created')
+  console.log("paymentHist table created");
 });
 
 //Payment webhook
-app.post('/monnify/webhook', async (req, res) => {
+app.post("/monnify/webhook", async (req, res) => {
   const payload = req.body;
   try {
+    // Step 1: Verify the request signature
+    const verifySignature = (payload, signature) => {
+      const secretKey = process.env.MON_SECRET_KEY;
+      const computedHash = crypto
+        .createHmac("sha512", secretKey)
+        .update(JSON.stringify(payload))
+        .digest("hex");
+      return computedHash === signature;
+    };
 
-  // Step 1: Verify the request signature
-  const verifySignature = (payload, signature) => {
-    const secretKey = process.env.MON_SECRET_KEY;
-    const computedHash = crypto.createHmac('sha512', secretKey).update(JSON.stringify(payload)).digest('hex');
-    return computedHash === signature;
-  };
+    const monnifySignature = req.headers["monnify-signature"];
+    if (!monnifySignature || !verifySignature(payload, monnifySignature)) {
+      console.error("Invalid Monnify signature");
+      return res.status(403).json({ message: "Unauthorized request" });
+    }
 
-  const monnifySignature = req.headers['monnify-signature'];
-  if (!monnifySignature || !verifySignature(payload, monnifySignature)) {
-    console.error('Invalid Monnify signature');
-    return res.status(403).json({ message: 'Unauthorized request' });
-  }
-  
-  const paymentHist = async (payload) => {
     const eventType = payload.eventType;
     const reference = payload.eventData.product.reference;
     const paymentRef = payload.eventData.paymentReference;
@@ -506,45 +527,65 @@ app.post('/monnify/webhook', async (req, res) => {
     const charges = (chargesPercent / 100) * amountPaid;
     const netAmount = amountPaid - charges;
 
-     try {
-      const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
-      
-        db.execute(sql, [reference, eventType, paymentRef, paidOn, netAmount, paymentMethod, paymentStatus]);
-        
-        db.query(`SELECT user_balance FROM users WHERE d_id = ?`, [reference], (err, result) => {
-          if (err) {
-            return;
-          }
-        const prevBalance = result[0].user_balance;
-        
-      //   if (prevBalance.length === 0) {
-      //     return;
-      //  }
+    const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
 
-      //  const prevBalanc = prevBalance[0].user_balance;
-      //  console.log(prevBalanc);
-        const newBalance = prevBalance + netAmount;
-       
-       db.execute(`UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`, [newBalance, prevBalance, reference], (err, result) => {
+    db.execute(
+      sql,
+      [
+        reference,
+        eventType,
+        paymentRef,
+        paidOn,
+        netAmount,
+        paymentMethod,
+        paymentStatus,
+      ],
+      (err, result) => {
         if (err) {
-          return;
+          console.log("Failed to insert payment history");
+          return res
+            .status(500)
+            .json({ message: "Failed to insert payment history" });
         }
-       });
-        });
-       } catch (err) {
-      console.error('Error inserting payment:', err);
-   }
-  };
+        res.status(200).json({ message: "Webhook proccessed successfully" });
 
-  
-  await paymentHist(payload);
-  res.status(200).json({message: 'Webhook proccessed successfully'})
+        db.query(
+          `SELECT user_balance FROM users WHERE d_id = ?`,
+          [reference],
+          (err, result) => {
+            if (err || result.length === 0) {
+              return res
+                .status(500)
+                .json({ message: "Failed to select user balance" });
+            }
+
+            const prevBalance = result[0].user_balance;
+            const newBalance = prevBalance + netAmount;
+
+            db.execute(
+              `UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`,
+              [newBalance, prevBalance, reference],
+              (err, result) => {
+                if (err) {
+                  return res
+                    .status(500)
+                    .json({ message: "Failed to update user balance" });
+                }
+              }
+            );
+          }
+        );
+      }
+    );
   } catch (err) {
-      console.error(err);
-      res.status(500).json({message: 'Error processing transaction record'})
+    console.error("Error inserting payment:", err);
   }
 });
 
+// } catch (err) {
+//     console.error(err);
+//     res.status(500).json({message: 'Error processing transaction record'})
+// }
 
 //Logout route
 app.post("/logout", (req, res) => {
