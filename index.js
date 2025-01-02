@@ -419,7 +419,7 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
     const acctNo = response.data.responseBody.accountNumber;
     const acctName = response.data.responseBody.accountName;
     const bankName = response.data.responseBody.bankName;
-    const refrence = response.data.responseBody.accountRefrence;
+    const refrence = response.data.responseBody.accountReference;
     const sql = `INSERT INTO userBankDetails1 (id, acctNo, acctName, bankName) VALUES (?, ?, ?, ?)`;
     db.query(sql, [refrence, acctNo, acctName, bankName], (err, result) => {
       if (err) {
