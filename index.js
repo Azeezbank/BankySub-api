@@ -547,7 +547,6 @@ app.post("/monnify/webhook", async (req, res) => {
             .status(500)
             .json({ message: "Failed to insert payment history" });
         }
-        res.status(200).json({ message: "Webhook proccessed successfully" });
 
         db.query(
           `SELECT user_balance FROM users WHERE d_id = ?`,
@@ -571,6 +570,7 @@ app.post("/monnify/webhook", async (req, res) => {
                     .status(500)
                     .json({ message: "Failed to update user balance" });
                 }
+                res.status(200).json({ message: "Webhook proccessed successfully" });
               }
             );
           }
