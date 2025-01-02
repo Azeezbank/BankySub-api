@@ -1,4 +1,4 @@
-import mysql from "mysql2/promise";
+import mysql from "mysql2";
 import express from "express";
 import dotenv from "dotenv";
 //import nodemailer from "nodemailer";
@@ -478,6 +478,7 @@ db.execute(sql2, (err, result) => {
 //Payment webhook
 app.post('/monnify/webhook', async (req, res) => {
   const payload = req.body;
+  try {
 
   // Step 1: Verify the request signature
   const verifySignature = (payload, signature) => {
@@ -508,9 +509,9 @@ app.post('/monnify/webhook', async (req, res) => {
      try {
       const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
       
-       await db.execute(sql, [reference, eventType, paymentRef, paidOn, netAmount, paymentMethod, paymentStatus]);
+       db.execute(sql, [reference, eventType, paymentRef, paidOn, netAmount, paymentMethod, paymentStatus]);
         
-        const [prevBalance] = await db.query(`SELECT user_balance FROM users WHERE d_id = ?`, [reference]);
+        const [prevBalance] = db.query(`SELECT user_balance FROM users WHERE d_id = ?`, [reference]);
         
         if (prevBalance.length === 0) {
           return;
@@ -519,14 +520,14 @@ app.post('/monnify/webhook', async (req, res) => {
        const prevBalanc = prevBalance[0].user_balance;
         const newBalance = prevBalanc + netAmount;
        
-       await db.execute(`UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`, [newBalance, prevBalanc, reference]);
+       db.execute(`UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`, [newBalance, prevBalanc, reference]);
         
        } catch (err) {
       console.error('Error inserting payment:', err);
    }
   };
 
-  try {
+  
   await paymentHist(payload);
   res.status(200).json({message: 'Webhook proccessed successfully'})
   } catch (err) {
