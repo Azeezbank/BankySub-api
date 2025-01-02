@@ -1,4 +1,4 @@
-import mysql from "mysql2/promise";
+import mysql from "mysql2";
 import express from "express";
 import dotenv from "dotenv";
 //import nodemailer from "nodemailer";
@@ -508,22 +508,36 @@ app.post('/monnify/webhook', async (req, res) => {
      try {
       const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
       
-       await db.execute(sql, [reference, eventType, paymentRef, paidOn, netAmount, paymentMethod, paymentStatus]);
+       db.execute(sql, [reference, eventType, paymentRef, paidOn, netAmount, paymentMethod, paymentStatus], async (err, result) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({message: 'FError inserting transaction details'});
+        }
         
-        const [prevBalance] = await db.query(`SELECT user_balance FROM users WHERE d_id = ?`, [reference])
-       
+        db.query(`SELECT user_balance FROM users WHERE d_id = ?`, [reference], (err, result) => {
+          if (err) {
+            console.error(err)
+            return res.status(500).json({message: 'Error seecting user balance'});
+          }
+
+         const prevBalance = result[0].user_balance;
         if (prevBalance.length === 0) {
-         throw new Error('User not found')
+          console.log('No user balance found')
+         return res.status(404).json({message: 'No user balance found'});
        }
 
-       const prevBalanc = prevBalance[0].user_balance;
-        const newBalance = prevBalanc + netAmount;
+        const newBalance = prevBalance + netAmount;
        
-        await db.execute(`UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`, [newBalance, prevBalanc, reference]);
-       
+       db.execute(`UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`, [newBalance, prevBalanc, reference], (err, result) => {
+        if (err) {
+          console.log('Error updating user balance and previous balance');
+          return res.status(500).json({message: 'Error updating user balance and previous balance'});
+        }
+       });
+        });
+      });
        } catch (err) {
       console.error('Error inserting payment:', err);
-      throw err;
    }
   };
 
