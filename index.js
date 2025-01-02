@@ -509,20 +509,28 @@ app.post('/monnify/webhook', async (req, res) => {
      try {
       const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
       
-       await db.execute(sql, [reference, eventType, paymentRef, paidOn, netAmount, paymentMethod, paymentStatus]);
+        db.execute(sql, [reference, eventType, paymentRef, paidOn, netAmount, paymentMethod, paymentStatus]);
         
-        const [prevBalance] = await db.query(`SELECT user_balance FROM users WHERE d_id = ?`, [reference]);
+        db.query(`SELECT user_balance FROM users WHERE d_id = ?`, [reference], (err, result) => {
+          if (err) {
+            return;
+          }
+        const prevBalance = result[0].user_balance;
         
-        if (prevBalance.length === 0) {
-          return;
-       }
+      //   if (prevBalance.length === 0) {
+      //     return;
+      //  }
 
-       const prevBalanc = prevBalance[0].user_balance;
-       console.log(prevBalanc);
-        const newBalance = prevBalanc + netAmount;
+      //  const prevBalanc = prevBalance[0].user_balance;
+      //  console.log(prevBalanc);
+        const newBalance = prevBalance + netAmount;
        
-       await db.execute(`UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`, [newBalance, prevBalanc, reference]);
-        
+       db.execute(`UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`, [newBalance, prevBalance, reference], (err, result) => {
+        if (err) {
+          return;
+        }
+       });
+        });
        } catch (err) {
       console.error('Error inserting payment:', err);
    }
