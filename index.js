@@ -1,4 +1,4 @@
-import mysql from "mysql2";
+import mysql from "mysql2/promise";
 import express from "express";
 import dotenv from "dotenv";
 //import nodemailer from "nodemailer";
