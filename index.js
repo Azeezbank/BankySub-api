@@ -516,8 +516,8 @@ app.post('/monnify/webhook', async (req, res) => {
           throw new Error('No user balance found')
        }
 
-       const prevBalanc = prevBalance.user_balance;
-        const newBalance = prevBalance + netAmount;
+       const prevBalanc = prevBalance[0].user_balance;
+        const newBalance = prevBalanc + netAmount;
        
        await db.execute(`UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`, [newBalance, prevBalanc, reference]);
         
