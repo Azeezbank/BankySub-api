@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import JWT from "jsonwebtoken";
 //import multer from 'multer';
 import axios from "axios";
+import crypto from 'crypto';
 
 const port = process.env.PORT || 3006;
 
@@ -466,10 +467,62 @@ app.get('/api/user_info', authenticateToken, (req, res) => {
 });
 
 //Payment webhook
-app.post('/monnify/webhook', (req, res) => {
+app.post('/monnify/webhook', async (req, res) => {
   const payload = req.body;
-  console.log(payload);
-  res.status(200).send('Webhook proccessed')
+
+  // Step 1: Verify the request signature
+  const verifySignature = (payload, signature) => {
+    const secretKey = process.env.MON_SECRET_KEY;
+    const computedHash = crypto.createHmac('sha512', secretKey).update(JSON.stringify(payload)).digest('hex');
+    return computedHash === signature;
+  };
+
+  const monnifySignature = req.headers['monnify-signature'];
+  if (!monnifySignature || !verifySignature(payload, monnifySignature)) {
+    console.error('Invalid Monnify signature');
+    return res.status(403).json({ message: 'Unauthorized request' });
+  }
+  
+  const paymentHist = async (payload) => {
+    const eventType = payload.eventType;
+    const reference = payload.eventData.product.reference;
+    const paymentRef = payload.eventData.paymentReference;
+    const paidOn = payload.eventData.paidOn;
+    const amountPaid = payload.eventData.amountPaid;
+    const paymentMethod = payload.eventData.paymentMethod;
+    const paymentStatus = payload.eventData.paymentStatus;
+
+    const chargesPercent = 2;
+    const charges = (chargesPercent / 100) * amountPaid;
+    const netAmount = amountPaid - charges;
+
+     try {
+      const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
+      await db.execute(sql, [reference, eventType, paymentRef, paidOn, netAmount, paymentMethod, paymentStatus]);
+        
+        const [prevBalance] = await db.query(`SELECT user_balance FROM user WHERE d_id = ?`, [reference]);
+       if (prevBalance.length === 0) {
+         throw new Error('User not found')
+       }
+
+       const prevBalanc = prevBalance[0].user_balance;
+        const newBalance = prevBalanc + netAmount;
+       
+        await db.execute(`UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`, [newBalance, prevBalanc, reference]);
+       
+       } catch (err) {
+      console.error('Error inserting payment:', err);
+      throw err;
+   }
+  };
+
+  try {
+  await paymentHist(payload);
+  res.status(200).json({message: 'Webhook proccessed successfully'})
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({message: 'Error processing transaction record'})
+  }
 });
 
 
