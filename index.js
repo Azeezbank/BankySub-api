@@ -513,7 +513,7 @@ app.post('/monnify/webhook', async (req, res) => {
         const [prevBalance] = await db.query(`SELECT user_balance FROM users WHERE d_id = ?`, [reference]);
         
         if (prevBalance.length === 0) {
-          throw new Error('No user balance found')
+          throw err;
        }
 
        const prevBalanc = prevBalance[0].user_balance;
