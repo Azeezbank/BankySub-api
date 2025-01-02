@@ -513,7 +513,7 @@ app.post('/monnify/webhook', async (req, res) => {
         const [prevBalance] = await db.query(`SELECT user_balance FROM users WHERE d_id = ?`, [reference]);
         
         if (prevBalance.length === 0) {
-          throw err;
+          return;
        }
 
        const prevBalanc = prevBalance[0].user_balance;
@@ -523,7 +523,6 @@ app.post('/monnify/webhook', async (req, res) => {
         
        } catch (err) {
       console.error('Error inserting payment:', err);
-      throw err;
    }
   };
 
