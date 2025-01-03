@@ -486,7 +486,7 @@ db.execute(sql2, (err, result) => {
 //Payment webhook
 app.post("/monnify/webhook", async (req, res) => {
   const payload = req.body;
-  try {
+  
     // Step 1: Verify the request signature
     const verifySignature = (payload, signature) => {
       const secretKey = process.env.MON_SECRET_KEY;
@@ -512,9 +512,11 @@ app.post("/monnify/webhook", async (req, res) => {
     const paymentStatus = payload.eventData.paymentStatus;
 
     const chargesPercent = 2;
+    console.log(amountPaid);
     const charges = (chargesPercent / 100) * amountPaid;
     const netAmount = amountPaid - charges;
 
+    try {
     const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
 
     db.execute(
@@ -549,7 +551,8 @@ app.post("/monnify/webhook", async (req, res) => {
             const prevBalance = result[0].user_balance;
             console.log(prevBalance);
             const newBalance = prevBalance + netAmount;
-            console.log(newBalance)
+            console.log(newBalance);
+            console.log(netAmount) ;
 
             db.execute(
               `UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`,
