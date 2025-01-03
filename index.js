@@ -71,14 +71,11 @@ db.getConnection((err, connection) => {
 //   console.log("Table plans created");
 // });
 
-// db.query(`INSERT INTO data_types(name, network_name) VALUES('Coporate gifting', 'GLO') `, async (err, result) => {
-//   if (err) throw err;
-//   console.log('Data entered successfully');
-// });
 
-// db.query(`INSERT INTO data_plans(id, name, price, network_name, data_type) VALUES(3, '1 gb', '284', 'Airtel', 'Coporate gifting')`, (err, result) => {
+
+// db.query(`ALTER TABLE data_plans ADD api VARCHAR(15)`, (err, result) => {
 //   if (err) throw err;
-//   console.log('Inserted');
+//   console.log('AdedeEEE');
 // });
 
 //User account details
@@ -176,6 +173,28 @@ app.get("/network", (req, res) => {
   });
 });
 
+//Middleware to protect routes
+const authenticateToken = (req, res, next) => {
+  const token = req.cookies.token;
+
+  if (!token) {
+    return res.status(401).json({ message: "unauthorized" });
+  }
+
+  JWT.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: "invalid token" });
+    }
+    req.user = user;
+    next();
+  });
+};
+
+//Protected route
+app.get("/protected", authenticateToken, (req, res) => {
+  res.status(200).json({ message: "Authorized" });
+});
+
 //Fetch data plan type
 app.post("/data/types", (req, res) => {
   const { choosenNetwork } = req.body;
@@ -190,15 +209,37 @@ app.post("/data/types", (req, res) => {
 });
 
 //Fetch data plans
-app.post("/data/plans", (req, res) => {
+app.post("/data/plans", authenticateToken, (req, res) => {
   const { choosenNetwork, choosenDataType } = req.body;
-  const sql = `SELECT * FROM data_plans WHERE network_name = ? AND is_active = 'active' AND data_type = ?`;
+  const userid = req.user.id;
+
+  db.execute(`SELECT packages FROM users WHERE d_id = ?`, [userid], (err, result) => {
+    if (err) {
+      console.log('Failed to select user packages');
+      return res.status(500).json({message: 'Failed to select user packages'});
+    }
+    const packages = result[0].packages;
+    const packag = '';
+    if (packages === 'USER') {
+      packag = 'user';
+    } else if (packages === 'RESELLER'){
+      packag = 'reseller';
+    } else if (packages === 'API') {
+      packag = 'api'
+    } else {
+      console.log('Invalid package type');
+      return;
+    }
+console.log(packag);
+
+  const sql = `SELECT d_id, id, name, price, network_name, data_type, validity, packag FROM data_plans WHERE network_name = ? AND is_active = 'active' AND data_type = ?`;
   db.query(sql, [choosenNetwork, choosenDataType], (err, result) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ Error: "Failed to select data type" });
     }
     res.status(200).json(result);
+  });
   });
 });
 
@@ -244,7 +285,46 @@ app.post("/api/data=bundle", async (req, res) => {
               requestBody,
               { headers }
             );
+
+            //Deduct payment
+    db.execute(`SELECT user_balance FROM users WHERE d_id = ?`, [userid], (err, result) => {
+      if (err || result.length === 0) {
+        console.error('Error slecting user balance');
+        return res.status(500).json({message: 'Error slecting user balance'});
+      }
+
+      const wallet = result[0].user_balance;
+      if (wallet < DataPrice) {
+        console.error('Insufficient wallet balance')
+        return res.status(404).json({message: 'Insufficient wallet balance'});
+      }
+      const newBalance = wallet - DataPrice;
+      db.execute(`UPDATE users SET user_balance = ? WHERE d_id = ?`, [newBalance, userid], (err, result) => {
+        if (err) {
+          console.error('Failed to deduct user wallet for airtime')
+          return res.status(500).json({message: 'Failed to deduct user wallet for airtime'});
+        }
+
+        db.execute(`UPDATE users SET prev_balance = ? WHERE d_id = ?`, [wallet, userid], (err, result) => {
+          if (err) {
+            console.error('Failed to set previoud balance');
+            return res.status(500).json({message: 'Failed to set previoud balance'})
+          }
+
+        if (response.data.results[0].status === 'failed' || response.data.results[0].status === 'Failed') {
+          db.execute(`UPDATE users SET user_balance = ? WHERE d_id = ?`, [wallet, userid], (err, result) => {
+            if (err) {
+              console.error('Failed to refund user');
+            }
+            console.log('User refunded')
+          });
+        } else {
+          console.log('Transaction successful')
+        }
             res.status(200).json(response.data);
+      });
+      });
+    });
           } catch (err) {
             console.error(
               "Failed to fetch from API",
@@ -290,26 +370,6 @@ app.post("/api/data=bundle", async (req, res) => {
 //   console.log('Inserted');
 // });
 
-//Middleware to protect routes
-const authenticateToken = (req, res, next) => {
-  const token = req.cookies.token;
-
-  if (!token) {
-    return res.status(401).json({ message: "unauthorized" });
-  }
-
-  JWT.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: "invalid token" });
-    }
-    req.user = user;
-    next();
-  });
-};
-//Protected route
-app.get("/protected", authenticateToken, (req, res) => {
-  res.status(200).json({ message: "Authorized" });
-});
 
 // Fetch Airtime network
 app.get("/api/airtimeN", (req, res) => {
@@ -378,15 +438,24 @@ app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
           console.error('Failed to deduct user wallet for airtime')
           return res.status(500).json({message: 'Failed to deduct user wallet for airtime'});
         }
+        db.execute(`UPDATE users SET prev_balance = ? WHERE d_id = ?`, [wallet, userid], (err, result) => {
+          if (err) {
+            console.error('Failed to set previoud balance');
+            return res.status(500).json({message: 'Failed to set previoud balance'})
+          }
+
         if (response.data.results[0].status === 'failed' || response.data.results[0].status === 'Failed') {
           db.execute(`UPDATE users SET user_balance = ? WHERE d_id = ?`, [wallet, userid], (err, result) => {
             if (err) {
               console.error('Failed to refund user');
             }
             console.log('User refunded')
-          })
-        } 
+          });
+        } else {
+          console.log('Transaction successful')
+        }
     res.status(200).json(response.data);
+      });
       });
     });
   } catch (err) {
@@ -612,8 +681,6 @@ app.post('/api/data=histories/webhook', async (req, res) => {
   res.status(200).json({message: 'Receipt received successfully'})
 });
 
-//Update user information
-//app.post()
 
 //Logout route
 app.post("/logout", (req, res) => {
