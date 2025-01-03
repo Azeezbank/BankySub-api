@@ -214,7 +214,7 @@ app.post("/data/plans", authenticateToken, (req, res) => {
   const { choosenNetwork, choosenDataType } = req.body;
   const userid = req.user.id;
 
-  db.execute(`SELECT packages FROM users WHERE d_id = ?`, [userid], (err, result) => {
+  db.query(`SELECT packages FROM users WHERE d_id = ?`, [userid], (err, result) => {
     if (err) {
       console.log('Failed to select user packages');
       return res.status(500).json({message: 'Failed to select user packages'});
