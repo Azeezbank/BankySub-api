@@ -47,14 +47,14 @@ db.getConnection((err, connection) => {
 });
 
 //Create table users
-db.query(
-  `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, user_pass VARCHAR(255), username VARCHAR(255), user_email VARCHAR(255), user_registered DATETIME DEFAULT CURRENT_TIMESTAMP, user_balance DECIMAL(10,2) DEFAULT 0.00)`,
-  (err, result) => {
-    if (err) throw err;
-    console.log("Table networks created");
-    connection.release();
-  }
-);
+// db.query(
+//   `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, user_pass VARCHAR(255), username VARCHAR(255), user_email VARCHAR(255), user_registered DATETIME DEFAULT CURRENT_TIMESTAMP, user_balance DECIMAL(10,2) DEFAULT 0.00)`,
+//   (err, result) => {
+//     if (err) throw err;
+//     console.log("Table networks created");
+//     connection.release();
+//   }
+// );
 
 // db.query(`CREATE TABLE IF NOT EXISTS networks(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //     if (err) throw err;
@@ -87,14 +87,15 @@ db.query(
 // });
 
 //User account details
-db.query(
-  `CREATE TABLE IF NOT EXISTS userBankDetails1(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), acctNo VARCHAR(255), acctName VARCHAR(255), bankName VARCHAR(255), is_active ENUM('active', 'disabled') DEFAULT 'active')`,
-  async (err, result) => {
-    if (err) throw err;
-    console.log("BANK CREATED");
-    connection.release();
-  }
-);
+// db.query(
+//   `CREATE TABLE IF NOT EXISTS userBankDetails1(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), acctNo VARCHAR(255), acctName VARCHAR(255), bankName VARCHAR(255), is_active ENUM('active', 'disabled') DEFAULT 'active')`,
+//   async (err, result) => {
+//     if (err) throw err;
+//     console.log("BANK CREATED");
+//     connection.release();
+//   }
+// );
+
 //Route to register user
 app.post("/register", async (req, res) => {
   const { password, username, email } = req.body;
@@ -131,7 +132,6 @@ app.post("/register", async (req, res) => {
       }
     }
   );
-  connection.release();
 });
 
 //user login
@@ -165,7 +165,6 @@ app.post("/login", (req, res) => {
       });
 
       res.status(200).json({ message: "login successful" });
-      connection.release();
     }
   );
 });
@@ -179,7 +178,6 @@ app.get("/network", (req, res) => {
       return res.status(500).json({ message: "Server unavailable" });
     }
     res.status(200).json(result);
-    connection.release();
   });
 });
 
@@ -193,7 +191,6 @@ app.post("/data/types", (req, res) => {
       return res.status(500).json({ Error: "Failed to select network" });
     }
     res.status(200).json(result);
-    connection.release();
   });
 });
 
@@ -207,7 +204,6 @@ app.post("/data/plans", (req, res) => {
       return res.status(500).json({ Error: "Failed to select data type" });
     }
     res.status(200).json(result);
-    connection.release();
   });
 });
 
@@ -263,7 +259,6 @@ app.post("/api/data=bundle", async (req, res) => {
               .status(500)
               .json({ error: "Failed to fetch data from external API" });
           }
-          connetion.release();
         }
       );
     });
@@ -279,7 +274,6 @@ const sql = `CREATE TABLE IF NOT EXISTS AirtimeN(d_id INT PRIMARY KEY AUTO_INCRE
 db.query(sql, (err, result) => {
   if (err) throw err;
   console.log("Airtime network Table created");
-  connection.release();
 });
 
 //Insert into Airtime network table
@@ -293,7 +287,6 @@ const AirtimeT = `CREATE TABLE IF NOT EXISTS AirtimeT(d_id INT PRIMARY KEY AUTO_
 db.query(AirtimeT, (err, result) => {
   if (err) throw err;
   console.log("Airtime Type Table created");
-  connection.release();
 });
 
 //Insert into Airtime type table
@@ -332,7 +325,6 @@ app.get("/api/airtimeN", (req, res) => {
       return res.status(500).json({ message: "Server unavailable" });
     }
     res.status(200).json(result);
-    connection.release();
   });
 });
 
@@ -347,7 +339,6 @@ app.get("/api/airtimeT", (req, res) => {
       return res.status(404).json({ error: "Airtime type not found" });
     }
     res.status(200).json(result);
-    connection.release();
   });
 });
 
@@ -443,7 +434,6 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
           .json({ message: "Error inserting bank details" });
       }
       console.log("Bank details innserted");
-      connection.release();
     });
     return response.data.responseBody;
   } catch (err) {
@@ -466,7 +456,6 @@ app.post("/api/user_account", authenticateToken, (req, res) => {
       return res.status(404).json({ message: "No details found" });
     }
     res.status(200).json(result);
-    connection.release();
   });
 });
 
@@ -482,7 +471,6 @@ app.get("/api/user_info", authenticateToken, (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
     res.status(200).json(result);
-    connection.release();
   });
 });
 
