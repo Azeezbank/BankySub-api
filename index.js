@@ -34,7 +34,7 @@ const db = mysql.createPool({
   database: process.env.DB_DATABASE,
   waitForConnections: true,
   queueLimit: 0,
-  connectionLimit: 20,
+  connectionLimit: 10,
 });
 
 db.getConnection((err, connection) => {
@@ -79,11 +79,6 @@ db.getConnection((err, connection) => {
 // db.query(`INSERT INTO data_plans(id, name, price, network_name, data_type) VALUES(3, '1 gb', '284', 'Airtel', 'Coporate gifting')`, (err, result) => {
 //   if (err) throw err;
 //   console.log('Inserted');
-// });
-
-// db.query(`ALTER TABLE networks ADD id INT`, (err, result) => {
-//   if (err) throw err;
-//   console.log('Updated');
 // });
 
 //User account details
@@ -270,11 +265,11 @@ app.post("/api/data=bundle", async (req, res) => {
 
 //Airtime section
 //Create Airtime network table
-const sql = `CREATE TABLE IF NOT EXISTS AirtimeN(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active', id INT)`;
-db.query(sql, (err, result) => {
-  if (err) throw err;
-  console.log("Airtime network Table created");
-});
+// const sql = `CREATE TABLE IF NOT EXISTS AirtimeN(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active', id INT)`;
+// db.query(sql, (err, result) => {
+//   if (err) throw err;
+//   console.log("Airtime network Table created");
+// });
 
 //Insert into Airtime network table
 // db.query(`INSERT INTO AirtimeN(name, id) VALUES('GLO', 2)`, (err, result) => {
@@ -283,11 +278,11 @@ db.query(sql, (err, result) => {
 // });
 
 //Create Airtime type table
-const AirtimeT = `CREATE TABLE IF NOT EXISTS AirtimeT(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`;
-db.query(AirtimeT, (err, result) => {
-  if (err) throw err;
-  console.log("Airtime Type Table created");
-});
+// const AirtimeT = `CREATE TABLE IF NOT EXISTS AirtimeT(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`;
+// db.query(AirtimeT, (err, result) => {
+//   if (err) throw err;
+//   console.log("Airtime Type Table created");
+// });
 
 //Insert into Airtime type table
 // db.query(`INSERT INTO AirtimeT(name) VALUES('VTU')`, (err, result) => {
@@ -343,8 +338,9 @@ app.get("/api/airtimeT", (req, res) => {
 });
 
 //Fetch Airtime from API
-app.post("/api/airtime/topup", async (req, res) => {
+app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
   const { airtimeNChoosen, airtimeTChoosen, mobileN, amount } = req.body;
+  const userid = req.user.id;
   const airtimeBody = {
     network: airtimeNChoosen,
     amount: amount,
@@ -364,7 +360,35 @@ app.post("/api/airtime/topup", async (req, res) => {
       airtimeBody,
       { headers }
     );
+    //Deduct payment
+    db.execute(`SELECT user_balance FROM users WHERE d_id = ?`, [userid], (err, result) => {
+      if (err || result.length === 0) {
+        console.error('Error slecting user balance');
+        return res.status(500).json({message: 'Error slecting user balance'});
+      }
+
+      const wallet = result[0].user_balance;
+      if (wallet < amount) {
+        console.error('Insufficient wallet balance')
+        return res.status(404).json({message: 'Insufficient wallet balance'});
+      }
+      const newBalance = wallet - amount;
+      db.execute(`UPDATE users SET user_balance = ? WHERE d_id = ?`, [newBalance, userid], (err, result) => {
+        if (err) {
+          console.error('Failed to deduct user wallet for airtime')
+          return res.status(500).json({message: 'Failed to deduct user wallet for airtime'});
+        }
+        if (response.data.results[0].status === 'failed' || response.data.results[0].status === 'Failed') {
+          db.execute(`UPDATE users SET user_balance = ? WHERE d_id = ?`, [wallet, userid], (err, result) => {
+            if (err) {
+              console.error('Failed to refund user');
+            }
+            console.log('User refunded')
+          })
+        } 
     res.status(200).json(response.data);
+      });
+    });
   } catch (err) {
     console.error(err.response?.data || err.message);
     res
@@ -475,13 +499,13 @@ app.get("/api/user_info", authenticateToken, (req, res) => {
 });
 
 //Payment transaction table
-const sql2 = `CREATE TABLE IF NOT EXISTS paymentHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, event_type VARCHAR(255), payment_ref VARCHAR(255), paid_on DATETIME, amount DECIMAL(10, 2), payment_method VARCHAR(255), payment_status VARCHAR(255))`;
-db.execute(sql2, (err, result) => {
-  if (err) {
-    console.error(err);
-  }
-  console.log("paymentHist table created");
-});
+// const sql2 = `CREATE TABLE IF NOT EXISTS paymentHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, event_type VARCHAR(255), payment_ref VARCHAR(255), paid_on DATETIME, amount DECIMAL(10, 2), payment_method VARCHAR(255), payment_status VARCHAR(255))`;
+// db.execute(sql2, (err, result) => {
+//   if (err) {
+//     console.error(err);
+//   }
+//   console.log("paymentHist table created");
+// });
 
 
 //Payment webhook
@@ -550,10 +574,7 @@ app.post("/monnify/webhook", async (req, res) => {
             }
 
             const prevBalance = result[0].user_balance;
-            console.log(prevBalance);
             const newBalance = prevBalance + netAmount;
-            console.log(newBalance);
-            console.log(netAmount) ;
 
             db.execute(
               `UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`,
@@ -576,10 +597,23 @@ app.post("/monnify/webhook", async (req, res) => {
   }
 });
 
-// } catch (err) {
-//     console.error(err);
-//     res.status(500).json({message: 'Error processing transaction record'})
-// }
+// db.execute(
+//   `CREATE TABLE IF NOT EXISTS dataHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, api_response VARCHAR(255), balance_before INT, balance_after INT, mobile_number INT, plan INT, status VARCHAR(255), plan_network VARCHAR(10), plan_name VARCHAR(10), plan_amount INT, created_date TIMESTAMP, Ported_number TINYINT(1))`,
+//   (err, result) => {
+//     if (err) throw err;
+//     console.log("Table datahist created");
+//   }
+// );
+
+//Data webhook transaction histories
+app.post('/api/data=histories/webhook', async (req, res) => {
+  const payload = req.body;
+  console.log(payload);
+  res.status(200).json({message: 'Receipt received successfully'})
+});
+
+//Update user information
+//app.post()
 
 //Logout route
 app.post("/logout", (req, res) => {
