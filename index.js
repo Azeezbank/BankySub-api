@@ -547,7 +547,9 @@ app.post("/monnify/webhook", async (req, res) => {
             }
 
             const prevBalance = result[0].user_balance;
+            console.log(prevBalance);
             const newBalance = prevBalance + netAmount;
+            console.log(newBalance)
 
             db.execute(
               `UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`,
