@@ -240,6 +240,7 @@ console.log(packag);
       return res.status(500).json({ Error: "Failed to select data type" });
     }
     res.status(200).json(result);
+    console.log(result);
   });
   });
 });
