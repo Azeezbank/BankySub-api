@@ -220,7 +220,7 @@ app.post("/data/plans", authenticateToken, (req, res) => {
       return res.status(500).json({message: 'Failed to select user packages'});
     }
     const packages = result[0].packages;
-    const packag = '';
+    let packag = '';
     if (packages === 'USER') {
       packag = 'user';
     } else if (packages === 'RESELLER'){
