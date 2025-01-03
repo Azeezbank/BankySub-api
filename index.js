@@ -161,18 +161,6 @@ app.post("/login", (req, res) => {
   );
 });
 
-//Fetch data network
-app.get("/network", (req, res) => {
-  const sql = `SELECT * FROM networks WHERE is_active = 'active'`;
-  db.query(sql, (err, result) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ message: "Server unavailable" });
-    }
-    res.status(200).json(result);
-  });
-});
-
 //Middleware to protect routes
 const authenticateToken = (req, res, next) => {
   const token = req.cookies.token;
@@ -190,13 +178,26 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+//Fetch data network
+app.get("/network", authenticateToken, (req, res) => {
+  const sql = `SELECT * FROM networks WHERE is_active = 'active'`;
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server unavailable" });
+    }
+    res.status(200).json(result);
+  });
+});
+
+
 //Protected route
 app.get("/protected", authenticateToken, (req, res) => {
   res.status(200).json({ message: "Authorized" });
 });
 
 //Fetch data plan type
-app.post("/data/types", (req, res) => {
+app.post("/data/types", authenticateToken, (req, res) => {
   const { choosenNetwork } = req.body;
   const sql = `SELECT * FROM data_types WHERE network_name = ? AND is_active = 'active'`;
   db.query(sql, [choosenNetwork], (err, result) => {
@@ -244,7 +245,7 @@ console.log(packag);
 });
 
 //Fetch data from API
-app.post("/api/data=bundle", async (req, res) => {
+app.post("/api/data=bundle", authenticateToken, async (req, res) => {
   const { DataPrice, mobileNumber, choosenNetwork } = req.body;
   try {
     const sql = `SELECT * FROM data_plans WHERE price = ? AND is_active = 'active'`;
@@ -372,7 +373,7 @@ app.post("/api/data=bundle", async (req, res) => {
 
 
 // Fetch Airtime network
-app.get("/api/airtimeN", (req, res) => {
+app.get("/api/airtimeN", authenticateToken, (req, res) => {
   const sql = `SELECT * FROM AirtimeN WHERE is_active = 'active'`;
   db.query(sql, (err, result) => {
     if (err) {
@@ -384,7 +385,7 @@ app.get("/api/airtimeN", (req, res) => {
 });
 
 //Fetch Airtime type
-app.get("/api/airtimeT", (req, res) => {
+app.get("/api/airtimeT", authenticateToken, (req, res) => {
   const sql = `SELECT * FROM AirtimeT WHERE is_active = 'active'`;
   db.query(sql, (err, result) => {
     if (err) {
@@ -683,7 +684,7 @@ app.post('/api/data=histories/webhook', async (req, res) => {
 
 
 //Logout route
-app.post("/logout", (req, res) => {
+app.post("/logout", authenticateToken, (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
     secure: true,
