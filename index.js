@@ -483,6 +483,7 @@ db.execute(sql2, (err, result) => {
   console.log("paymentHist table created");
 });
 
+
 //Payment webhook
 app.post("/monnify/webhook", async (req, res) => {
   const payload = req.body;
