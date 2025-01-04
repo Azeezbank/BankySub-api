@@ -231,7 +231,6 @@ app.post("/data/plans", authenticateToken, (req, res) => {
       console.log('Invalid package type');
       return;
     }
-console.log(packag);
 
   const sql = `SELECT d_id, id, name, price, network_name, data_type, validity, ${packag} FROM data_plans WHERE network_name = ? AND is_active = 'active' AND data_type = ?`;
   db.query(sql, [choosenNetwork, choosenDataType], (err, result) => {
