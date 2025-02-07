@@ -35,7 +35,7 @@ const db = mysql.createPool({
   waitForConnections: true,
   queueLimit: 0,
   connectionLimit: 5,
-  port: 3306
+  port: process.env.DB_PORT
 });
 
 db.getConnection((err, connection) => {
