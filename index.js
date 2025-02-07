@@ -34,7 +34,8 @@ const db = mysql.createPool({
   database: process.env.DB_DATABASE,
   waitForConnections: true,
   queueLimit: 0,
-  connectionLimit: 10,
+  connectionLimit: 5,
+  port: process.env.PORT
 });
 
 db.getConnection((err, connection) => {
@@ -47,44 +48,41 @@ db.getConnection((err, connection) => {
 });
 
 //Create table users
-// db.query(
-//   `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, user_pass VARCHAR(255), username VARCHAR(255), user_email VARCHAR(255), user_registered DATETIME DEFAULT CURRENT_TIMESTAMP, user_balance DECIMAL(10,2) DEFAULT 0.00)`,
+// db.execute(
+//   `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, username VARCHAR(20), user_pass VARCHAR(255), user_email VARCHAR(100), user_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP, prev_balance INT, user_balance INT, packages ENUM('USER', 'RESELLER', 'API') DEFAULT 'USER')`,
 //   (err, result) => {
 //     if (err) throw err;
 //     console.log("Table networks created");
-//     connection.release();
 //   }
 // );
 
-// db.query(`CREATE TABLE IF NOT EXISTS networks(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
+// db.execute(`CREATE TABLE IF NOT EXISTS networks(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //     if (err) throw err;
 //     console.log("Table networks created");
 // });
 
-// db.query(`queryCREATE TABLE IF NOT EXISTS data_types(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(20), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
+// db.execute(`CREATE TABLE IF NOT EXISTS data_types(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(20), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //     if (err) throw err;
 //     console.log("Table data_types created");
 // });
 
-// db.query(`CREATE TABLE IF NOT EXISTS data_plans(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), price VARCHAR(255), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
+// db.execute(`CREATE TABLE IF NOT EXISTS data_plans(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), network_name VARCHAR(10), data_type VARCHAR(10), validity VARCHAR(15), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //   if (err) throw err;
 //   console.log("Table plans created");
 // });
 
 
-
-// db.query(`ALTER TABLE data_plans ADD api VARCHAR(15)`, (err, result) => {
+// db.execute(`ALTER TABLE data_types CHANGE COLUMN network_name name VARCHAR(15) `, (err, result) => {
 //   if (err) throw err;
 //   console.log('AdedeEEE');
 // });
 
 //User account details
-// db.query(
+// db.execute(
 //   `CREATE TABLE IF NOT EXISTS userBankDetails1(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), acctNo VARCHAR(255), acctName VARCHAR(255), bankName VARCHAR(255), is_active ENUM('active', 'disabled') DEFAULT 'active')`,
 //   async (err, result) => {
 //     if (err) throw err;
 //     console.log("BANK CREATED");
-//     connection.release();
 //   }
 // );
 
@@ -346,7 +344,7 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
 //Airtime section
 //Create Airtime network table
 // const sql = `CREATE TABLE IF NOT EXISTS AirtimeN(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active', id INT)`;
-// db.query(sql, (err, result) => {
+// db.execute(sql, (err, result) => {
 //   if (err) throw err;
 //   console.log("Airtime network Table created");
 // });
@@ -359,7 +357,7 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
 
 //Create Airtime type table
 // const AirtimeT = `CREATE TABLE IF NOT EXISTS AirtimeT(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`;
-// db.query(AirtimeT, (err, result) => {
+// db.execute(AirtimeT, (err, result) => {
 //   if (err) throw err;
 //   console.log("Airtime Type Table created");
 // });
@@ -568,7 +566,7 @@ app.get("/api/user_info", authenticateToken, (req, res) => {
 });
 
 //Payment transaction table
-// const sql2 = `CREATE TABLE IF NOT EXISTS paymentHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, event_type VARCHAR(255), payment_ref VARCHAR(255), paid_on DATETIME, amount DECIMAL(10, 2), payment_method VARCHAR(255), payment_status VARCHAR(255))`;
+// const sql2 = `CREATE TABLE IF NOT EXISTS paymentHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, event_type VARCHAR(100), payment_ref VARCHAR(255), paid_on DATETIME, amount INT, payment_method VARCHAR(255), payment_status VARCHAR(50))`;
 // db.execute(sql2, (err, result) => {
 //   if (err) {
 //     console.error(err);
@@ -606,32 +604,10 @@ app.post("/monnify/webhook", async (req, res) => {
     const paymentStatus = payload.eventData.paymentStatus;
 
     const chargesPercent = 2;
-    console.log(amountPaid);
     const charges = (chargesPercent / 100) * amountPaid;
     const netAmount = amountPaid - charges;
 
     try {
-    const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
-
-    db.execute(
-      sql,
-      [
-        reference,
-        eventType,
-        paymentRef,
-        paidOn,
-        netAmount,
-        paymentMethod,
-        paymentStatus,
-      ],
-      (err, result) => {
-        if (err) {
-          console.log("Failed to insert payment history");
-          return res
-            .status(500)
-            .json({ message: "Failed to insert payment history" });
-        }
-
         db.query(
           `SELECT user_balance FROM users WHERE d_id = ?`,
           [reference],
@@ -644,6 +620,29 @@ app.post("/monnify/webhook", async (req, res) => {
 
             const prevBalance = result[0].user_balance;
             const newBalance = prevBalance + netAmount;
+
+            const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, prev_balance, user_balance) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    db.execute(
+      sql,
+      [
+        reference,
+        eventType,
+        paymentRef,
+        paidOn,
+        netAmount,
+        paymentMethod,
+        paymentStatus,
+        prevBalance,
+        newBalance,
+      ],
+      (err, result) => {
+        if (err) {
+          console.log("Failed to insert payment history");
+          return res
+            .status(500)
+            .json({ message: "Failed to insert payment history" });
+        }
 
             db.execute(
               `UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`,
@@ -658,15 +657,17 @@ app.post("/monnify/webhook", async (req, res) => {
               }
             );
           }
+        )
+          }
         );
-      }
-    );
+     // }
+    //)
   } catch (err) {
     console.error("Error inserting payment:", err);
   }
 });
 
-// db.execute(
+//  db.execute(
 //   `CREATE TABLE IF NOT EXISTS dataHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, api_response VARCHAR(255), balance_before INT, balance_after INT, mobile_number INT, plan INT, status VARCHAR(255), plan_network VARCHAR(10), plan_name VARCHAR(10), plan_amount INT, created_date TIMESTAMP, Ported_number TINYINT(1))`,
 //   (err, result) => {
 //     if (err) throw err;
