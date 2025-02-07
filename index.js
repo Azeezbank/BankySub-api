@@ -61,18 +61,33 @@ db.getConnection((err, connection) => {
 //     console.log("Table networks created");
 // });
 
-// db.execute(`CREATE TABLE IF NOT EXISTS data_types(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(20), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
+// db.execute(`CREATE TABLE IF NOT EXISTS data_types(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(20), network_name VARCHAR(15), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //     if (err) throw err;
 //     console.log("Table data_types created");
 // });
 
-// db.execute(`CREATE TABLE IF NOT EXISTS data_plans(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), network_name VARCHAR(10), data_type VARCHAR(10), validity VARCHAR(15), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
+// db.execute(`INSERT INTO data_types(name, network_name) VALUES('SME', 'AIRTEL')`, (err, result) => {
+//   if (err) throw err;
+//   console.log("yes")
+// });
+
+
+// db.execute(`CREATE TABLE IF NOT EXISTS data_plans(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), network_name VARCHAR(10), data_type VARCHAR(10), validity VARCHAR(15), USER INT, is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //   if (err) throw err;
 //   console.log("Table plans created");
 // });
 
+// db.execute(`INSERT INTO data_plans(id, name, network_name, data_type, validity, USER) VALUES(7, '1 GB', 'MTN', 'SME', '30 days', 265)`, (err, result) => {
+//   if (err) throw err;
+//   console.log("yes")
+// });
+// db.execute(`INSERT INTO data_plans(id, name, network_name, data_type, validity, USER) VALUES(8, '2 GB', 'MTN', 'SME', '30 days', 534)`, (err, result) => {
+//   if (err) throw err;
+//   console.log("yes")
+// });
 
-// db.execute(`ALTER TABLE data_types CHANGE COLUMN network_name name VARCHAR(15) `, (err, result) => {
+
+// db.execute(`ALTER TABLE data_types ADD network_name VARCHAR(15) `, (err, result) => {
 //   if (err) throw err;
 //   console.log('AdedeEEE');
 // });
@@ -85,6 +100,11 @@ db.getConnection((err, connection) => {
 //     console.log("BANK CREATED");
 //   }
 // );
+
+// db.execute(`INSERT INTO networks(name) VALUES('MTN')`, (err, result) => {
+//   if (err) throw err;
+//   console.log("yes")
+// });
 
 //Route to register user
 app.post("/register", async (req, res) => {
