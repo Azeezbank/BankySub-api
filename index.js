@@ -250,7 +250,7 @@ app.post("/data/plans", authenticateToken, (req, res) => {
       return;
     }
 
-  const sql = `SELECT d_id, id, name, price, network_name, data_type, validity, ${packag} FROM data_plans WHERE network_name = ? AND is_active = 'active' AND data_type = ?`;
+  const sql = `SELECT d_id, id, name, network_name, data_type, validity, ${packag} FROM data_plans WHERE network_name = ? AND is_active = 'active' AND data_type = ?`;
   db.query(sql, [choosenNetwork, choosenDataType], (err, result) => {
     if (err) {
       console.error(err);
