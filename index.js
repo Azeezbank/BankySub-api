@@ -503,11 +503,12 @@ const authenticate = async () => {
   );
   return response.data.responseBody.accessToken;
 };
+
 //Payment connection
 app.post("/dedicated/account", authenticateToken, async (req, res) => {
   //Create dedicated account number
   const userid = req.user.id;
-  console.log(userid);
+  //console.log(userid);
   try {
     const token = await authenticate();
 
@@ -530,7 +531,7 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
         },
       }
     );
-    res.status(200).json(response.data);
+    // res.status(200).json(response.data);
     console.log(response.data.responseBody);
     const acctNo = response.data.responseBody.accountNumber;
     const acctName = response.data.responseBody.accountName;
@@ -545,10 +546,12 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
           .json({ message: "Error inserting bank details" });
       }
       console.log("Bank details innserted");
+      return res.status(200).json(response.data);
     });
-    return response.data.responseBody;
+    // return response.data.responseBody;
   } catch (err) {
     console.error(err.response?.data || err.message);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
 
