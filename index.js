@@ -504,6 +504,10 @@ const authenticate = async () => {
   return response.data.responseBody.accessToken;
 };
 
+// db.execute(`DELETE FROM userBankDetails1`, (err, result) => {
+//   if (err) throw err;
+//   console.log('deleted')
+// })
 //Payment connection
 app.post("/dedicated/account", authenticateToken, async (req, res) => {
   //Create dedicated account number
@@ -520,7 +524,8 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
         currencyCode: "NGN",
         contractCode: MON_CONTRACT_CODE,
         customerEmail: "bankoleazeezb98@gmail.com",
-        nin: "46182096878",
+        // nin: "46182096878",
+        nin: process.env.nin,
         customerName: "Bank",
         getAllAvailableBanks: true,
       },
