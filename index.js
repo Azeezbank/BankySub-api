@@ -666,7 +666,7 @@ app.post("/monnify/webhook", async (req, res) => {
       ],
       (err, result) => {
         if (err) {
-          console.log("Failed to insert payment history");
+          console.error("Failed to insert payment history", err);
           return res
             .status(500)
             .json({ message: "Failed to insert payment history" });
