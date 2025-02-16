@@ -695,6 +695,24 @@ app.post("/monnify/webhook", async (req, res) => {
   }
 });
 
+// fetch payment history
+app.get('/payment-history', (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  const countQuery = "SELECT COUNT(*) AS total FROM paymentHist";
+  const dataQuery = "SELECT * FROM paymentHist LIMIT ? OFFSET ?";
+
+  db.query(countQuery, (err, countResult) => {
+    if (err) return res.status(500).json({message: 'Server Error'});
+    const total = countResult[0].total;
+    db.query(dataQuery, [limit, offset], (err, dataResult) => {
+      if (err) return res.status(500).json({message: 'Server Error'});
+      res.json({total, page, limit, totalPage: Math.ceil(total / limit), data: dataResult});
+    });
+  });
+});
 //  db.execute(
 //   `CREATE TABLE IF NOT EXISTS dataHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, api_response VARCHAR(255), balance_before INT, balance_after INT, mobile_number INT, plan INT, status VARCHAR(255), plan_network VARCHAR(10), plan_name VARCHAR(10), plan_amount INT, created_date TIMESTAMP, Ported_number TINYINT(1))`,
 //   (err, result) => {
