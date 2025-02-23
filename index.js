@@ -9,6 +9,7 @@ import JWT from "jsonwebtoken";
 //import multer from 'multer';
 import axios from "axios";
 import crypto from "crypto";
+import { log } from "console";
 
 const port = process.env.PORT || 3006;
 
@@ -35,7 +36,7 @@ const db = mysql.createPool({
   waitForConnections: true,
   queueLimit: 0,
   connectionLimit: 5,
-  port: process.env.DB_PORT
+  port: process.env.DB_PORT,
 });
 
 db.getConnection((err, connection) => {
@@ -49,12 +50,13 @@ db.getConnection((err, connection) => {
 
 //Create table users
 // db.execute(
-//   `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, username VARCHAR(20), user_pass VARCHAR(255), user_email VARCHAR(100), user_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP, prev_balance INT, user_balance INT, packages ENUM('USER', 'RESELLER', 'API') DEFAULT 'USER')`,
+//   `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, username VARCHAR(20), user_pass VARCHAR(255), user_email VARCHAR(100), user_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP, prev_balance INT, user_balance INT, packages ENUM('USER', 'RESELLER', 'API') DEFAULT 'USER', Phone_number INT, Pin INT)`,
 //   (err, result) => {
 //     if (err) throw err;
 //     console.log("Table networks created");
 //   }
 // );
+
 
 // db.execute(`CREATE TABLE IF NOT EXISTS networks(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //     if (err) throw err;
@@ -71,7 +73,6 @@ db.getConnection((err, connection) => {
 //   console.log("yes")
 // });
 
-
 // db.execute(`CREATE TABLE IF NOT EXISTS data_plans(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), network_name VARCHAR(10), data_type VARCHAR(10), validity VARCHAR(15), USER INT, is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //   if (err) throw err;
 //   console.log("Table plans created");
@@ -85,7 +86,6 @@ db.getConnection((err, connection) => {
 //   if (err) throw err;
 //   console.log("yes")
 // });
-
 
 // db.execute(`ALTER TABLE data_types ADD network_name VARCHAR(15) `, (err, result) => {
 //   if (err) throw err;
@@ -208,7 +208,6 @@ app.get("/network", authenticateToken, (req, res) => {
   });
 });
 
-
 //Protected route
 app.get("/protected", authenticateToken, (req, res) => {
   res.status(200).json({ message: "Authorized" });
@@ -232,33 +231,39 @@ app.post("/data/plans", authenticateToken, (req, res) => {
   const { choosenNetwork, choosenDataType } = req.body;
   const userid = req.user.id;
 
-  db.query(`SELECT packages FROM users WHERE d_id = ?`, [userid], (err, result) => {
-    if (err) {
-      console.log('Failed to select user packages');
-      return res.status(500).json({message: 'Failed to select user packages'});
-    }
-    const packages = result[0].packages;
-    let packag = '';
-    if (packages === 'USER') {
-      packag = 'user';
-    } else if (packages === 'RESELLER'){
-      packag = 'reseller';
-    } else if (packages === 'API') {
-      packag = 'api'
-    } else {
-      console.log('Invalid package type');
-      return;
-    }
+  db.query(
+    `SELECT packages FROM users WHERE d_id = ?`,
+    [userid],
+    (err, result) => {
+      if (err) {
+        console.log("Failed to select user packages");
+        return res
+          .status(500)
+          .json({ message: "Failed to select user packages" });
+      }
+      const packages = result[0].packages;
+      let packag = "";
+      if (packages === "USER") {
+        packag = "user";
+      } else if (packages === "RESELLER") {
+        packag = "reseller";
+      } else if (packages === "API") {
+        packag = "api";
+      } else {
+        console.log("Invalid package type");
+        return;
+      }
 
-  const sql = `SELECT d_id, id, name, network_name, data_type, validity, ${packag} FROM data_plans WHERE network_name = ? AND is_active = 'active' AND data_type = ?`;
-  db.query(sql, [choosenNetwork, choosenDataType], (err, result) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ Error: "Failed to select data type" });
+      const sql = `SELECT d_id, id, name, network_name, data_type, validity, ${packag} FROM data_plans WHERE network_name = ? AND is_active = 'active' AND data_type = ?`;
+      db.query(sql, [choosenNetwork, choosenDataType], (err, result) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ Error: "Failed to select data type" });
+        }
+        res.status(200).json(result);
+      });
     }
-    res.status(200).json(result);
-  });
-  });
+  );
 });
 
 //Fetch data from API
@@ -305,44 +310,75 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
             );
 
             //Deduct payment
-    db.execute(`SELECT user_balance FROM users WHERE d_id = ?`, [userid], (err, result) => {
-      if (err || result.length === 0) {
-        console.error('Error slecting user balance');
-        return res.status(500).json({message: 'Error slecting user balance'});
-      }
+            db.execute(
+              `SELECT user_balance FROM users WHERE d_id = ?`,
+              [userid],
+              (err, result) => {
+                if (err || result.length === 0) {
+                  console.error("Error slecting user balance");
+                  return res
+                    .status(500)
+                    .json({ message: "Error slecting user balance" });
+                }
 
-      const wallet = result[0].user_balance;
-      if (wallet < DataPrice) {
-        console.error('Insufficient wallet balance')
-        return res.status(404).json({message: 'Insufficient wallet balance'});
-      }
-      const newBalance = wallet - DataPrice;
-      db.execute(`UPDATE users SET user_balance = ? WHERE d_id = ?`, [newBalance, userid], (err, result) => {
-        if (err) {
-          console.error('Failed to deduct user wallet for airtime')
-          return res.status(500).json({message: 'Failed to deduct user wallet for airtime'});
-        }
+                const wallet = result[0].user_balance;
+                if (wallet < DataPrice) {
+                  console.error("Insufficient wallet balance");
+                  return res
+                    .status(404)
+                    .json({ message: "Insufficient wallet balance" });
+                }
+                const newBalance = wallet - DataPrice;
+                db.execute(
+                  `UPDATE users SET user_balance = ? WHERE d_id = ?`,
+                  [newBalance, userid],
+                  (err, result) => {
+                    if (err) {
+                      console.error("Failed to deduct user wallet for airtime");
+                      return res
+                        .status(500)
+                        .json({
+                          message: "Failed to deduct user wallet for airtime",
+                        });
+                    }
 
-        db.execute(`UPDATE users SET prev_balance = ? WHERE d_id = ?`, [wallet, userid], (err, result) => {
-          if (err) {
-            console.error('Failed to set previoud balance');
-            return res.status(500).json({message: 'Failed to set previoud balance'})
-          }
+                    db.execute(
+                      `UPDATE users SET prev_balance = ? WHERE d_id = ?`,
+                      [wallet, userid],
+                      (err, result) => {
+                        if (err) {
+                          console.error("Failed to set previoud balance");
+                          return res
+                            .status(500)
+                            .json({
+                              message: "Failed to set previoud balance",
+                            });
+                        }
 
-        if (response.data.results[0].status === 'failed' || response.data.results[0].status === 'Failed') {
-          db.execute(`UPDATE users SET user_balance = ? WHERE d_id = ?`, [wallet, userid], (err, result) => {
-            if (err) {
-              console.error('Failed to refund user');
-            }
-            console.log('User refunded')
-          });
-        } else {
-          console.log('Transaction successful')
-        }
-            res.status(200).json(response.data);
-      });
-      });
-    });
+                        if (
+                          response.data.results[0].status === "failed" ||
+                          response.data.results[0].status === "Failed"
+                        ) {
+                          db.execute(
+                            `UPDATE users SET user_balance = ? WHERE d_id = ?`,
+                            [wallet, userid],
+                            (err, result) => {
+                              if (err) {
+                                console.error("Failed to refund user");
+                              }
+                              console.log("User refunded");
+                            }
+                          );
+                        } else {
+                          console.log("Transaction successful");
+                        }
+                        res.status(200).json(response.data);
+                      }
+                    );
+                  }
+                );
+              }
+            );
           } catch (err) {
             console.error(
               "Failed to fetch from API",
@@ -387,7 +423,6 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
 //   if (err) throw err;
 //   console.log('Inserted');
 // });
-
 
 // Fetch Airtime network
 app.get("/api/airtimeN", authenticateToken, (req, res) => {
@@ -439,43 +474,70 @@ app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
       { headers }
     );
     //Deduct payment
-    db.execute(`SELECT user_balance FROM users WHERE d_id = ?`, [userid], (err, result) => {
-      if (err || result.length === 0) {
-        console.error('Error slecting user balance');
-        return res.status(500).json({message: 'Error slecting user balance'});
-      }
-
-      const wallet = result[0].user_balance;
-      if (wallet < amount) {
-        console.error('Insufficient wallet balance')
-        return res.status(404).json({message: 'Insufficient wallet balance'});
-      }
-      const newBalance = wallet - amount;
-      db.execute(`UPDATE users SET user_balance = ? WHERE d_id = ?`, [newBalance, userid], (err, result) => {
-        if (err) {
-          console.error('Failed to deduct user wallet for airtime')
-          return res.status(500).json({message: 'Failed to deduct user wallet for airtime'});
+    db.execute(
+      `SELECT user_balance FROM users WHERE d_id = ?`,
+      [userid],
+      (err, result) => {
+        if (err || result.length === 0) {
+          console.error("Error slecting user balance");
+          return res
+            .status(500)
+            .json({ message: "Error slecting user balance" });
         }
-        db.execute(`UPDATE users SET prev_balance = ? WHERE d_id = ?`, [wallet, userid], (err, result) => {
-          if (err) {
-            console.error('Failed to set previoud balance');
-            return res.status(500).json({message: 'Failed to set previoud balance'})
-          }
 
-        if (response.data.results[0].status === 'failed' || response.data.results[0].status === 'Failed') {
-          db.execute(`UPDATE users SET user_balance = ? WHERE d_id = ?`, [wallet, userid], (err, result) => {
+        const wallet = result[0].user_balance;
+        if (wallet < amount) {
+          console.error("Insufficient wallet balance");
+          return res
+            .status(404)
+            .json({ message: "Insufficient wallet balance" });
+        }
+        const newBalance = wallet - amount;
+        db.execute(
+          `UPDATE users SET user_balance = ? WHERE d_id = ?`,
+          [newBalance, userid],
+          (err, result) => {
             if (err) {
-              console.error('Failed to refund user');
+              console.error("Failed to deduct user wallet for airtime");
+              return res
+                .status(500)
+                .json({ message: "Failed to deduct user wallet for airtime" });
             }
-            console.log('User refunded')
-          });
-        } else {
-          console.log('Transaction successful')
-        }
-    res.status(200).json(response.data);
-      });
-      });
-    });
+            db.execute(
+              `UPDATE users SET prev_balance = ? WHERE d_id = ?`,
+              [wallet, userid],
+              (err, result) => {
+                if (err) {
+                  console.error("Failed to set previoud balance");
+                  return res
+                    .status(500)
+                    .json({ message: "Failed to set previoud balance" });
+                }
+
+                if (
+                  response.data.results[0].status === "failed" ||
+                  response.data.results[0].status === "Failed"
+                ) {
+                  db.execute(
+                    `UPDATE users SET user_balance = ? WHERE d_id = ?`,
+                    [wallet, userid],
+                    (err, result) => {
+                      if (err) {
+                        console.error("Failed to refund user");
+                      }
+                      console.log("User refunded");
+                    }
+                  );
+                } else {
+                  console.log("Transaction successful");
+                }
+                res.status(200).json(response.data);
+              }
+            );
+          }
+        );
+      }
+    );
   } catch (err) {
     console.error(err.response?.data || err.message);
     res
@@ -536,7 +598,6 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
         },
       }
     );
-    // res.status(200).json(response.data);
     console.log(response.data.responseBody);
     const acctNo = response.data.responseBody.accountNumber;
     const acctName = response.data.responseBody.accountName;
@@ -553,7 +614,6 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
       console.log("Bank details innserted");
       return res.status(200).json(response.data);
     });
-    // return response.data.responseBody;
   } catch (err) {
     console.error(err.response?.data || err.message);
     return res.status(500).json({ message: "Internal server error" });
@@ -602,75 +662,74 @@ app.get("/api/user_info", authenticateToken, (req, res) => {
 //   console.log("paymentHist table created");
 // });
 
-
 //Payment webhook
 app.post("/monnify/webhook", async (req, res) => {
   const payload = req.body;
-  
-    // Step 1: Verify the request signature
-    const verifySignature = (payload, signature) => {
-      const secretKey = process.env.MON_SECRET_KEY;
-      const computedHash = crypto
-        .createHmac("sha512", secretKey)
-        .update(JSON.stringify(payload))
-        .digest("hex");
-      return computedHash === signature;
-    };
 
-    const monnifySignature = req.headers["monnify-signature"];
-    if (!monnifySignature || !verifySignature(payload, monnifySignature)) {
-      console.error("Invalid Monnify signature");
-      return res.status(403).json({ message: "Unauthorized request" });
-    }
+  // Step 1: Verify the request signature
+  const verifySignature = (payload, signature) => {
+    const secretKey = process.env.MON_SECRET_KEY;
+    const computedHash = crypto
+      .createHmac("sha512", secretKey)
+      .update(JSON.stringify(payload))
+      .digest("hex");
+    return computedHash === signature;
+  };
 
-    const eventType = payload.eventType;
-    const reference = payload.eventData.product.reference;
-    const paymentRef = payload.eventData.paymentReference;
-    const paidOn = payload.eventData.paidOn;
-    const amountPaid = payload.eventData.amountPaid;
-    const paymentMethod = payload.eventData.paymentMethod;
-    const paymentStatus = payload.eventData.paymentStatus;
+  const monnifySignature = req.headers["monnify-signature"];
+  if (!monnifySignature || !verifySignature(payload, monnifySignature)) {
+    console.error("Invalid Monnify signature");
+    return res.status(403).json({ message: "Unauthorized request" });
+  }
 
-    const chargesPercent = 2;
-    const charges = (chargesPercent / 100) * amountPaid;
-    const netAmount = amountPaid - charges;
+  const eventType = payload.eventType;
+  const reference = payload.eventData.product.reference;
+  const paymentRef = payload.eventData.paymentReference;
+  const paidOn = payload.eventData.paidOn;
+  const amountPaid = payload.eventData.amountPaid;
+  const paymentMethod = payload.eventData.paymentMethod;
+  const paymentStatus = payload.eventData.paymentStatus;
 
-    try {
-        db.query(
-          `SELECT user_balance FROM users WHERE d_id = ?`,
-          [reference],
-          (err, result) => {
-            if (err || result.length === 0) {
-              return res
-                .status(500)
-                .json({ message: "Failed to select user balance" });
-            }
+  const chargesPercent = 2;
+  const charges = (chargesPercent / 100) * amountPaid;
+  const netAmount = amountPaid - charges;
 
-            const prevBalance = result[0].user_balance;
-            const newBalance = prevBalance + netAmount;
-
-            const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, prev_balance, user_balance) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-    db.execute(
-      sql,
-      [
-        reference,
-        eventType,
-        paymentRef,
-        paidOn,
-        netAmount,
-        paymentMethod,
-        paymentStatus,
-        prevBalance,
-        newBalance,
-      ],
+  try {
+    db.query(
+      `SELECT user_balance FROM users WHERE d_id = ?`,
+      [reference],
       (err, result) => {
-        if (err) {
-          console.error("Failed to insert payment history", err);
+        if (err || result.length === 0) {
           return res
             .status(500)
-            .json({ message: "Failed to insert payment history" });
+            .json({ message: "Failed to select user balance" });
         }
+
+        const prevBalance = result[0].user_balance;
+        const newBalance = prevBalance + netAmount;
+
+        const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, prev_balance, user_balance) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+        db.execute(
+          sql,
+          [
+            reference,
+            eventType,
+            paymentRef,
+            paidOn,
+            netAmount,
+            paymentMethod,
+            paymentStatus,
+            prevBalance,
+            newBalance,
+          ],
+          (err, result) => {
+            if (err) {
+              console.error("Failed to insert payment history", err);
+              return res
+                .status(500)
+                .json({ message: "Failed to insert payment history" });
+            }
 
             db.execute(
               `UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`,
@@ -681,14 +740,16 @@ app.post("/monnify/webhook", async (req, res) => {
                     .status(500)
                     .json({ message: "Failed to update user balance" });
                 }
-                res.status(200).json({ message: "Webhook proccessed successfully" });
+                res
+                  .status(200)
+                  .json({ message: "Webhook proccessed successfully" });
               }
             );
           }
-        )
-          }
         );
-     // }
+      }
+    );
+    // }
     //)
   } catch (err) {
     console.error("Error inserting payment:", err);
@@ -696,7 +757,7 @@ app.post("/monnify/webhook", async (req, res) => {
 });
 
 // fetch payment history
-app.get('/payment-history', (req, res) => {
+app.get("/payment-history", (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
@@ -705,14 +766,33 @@ app.get('/payment-history', (req, res) => {
   const dataQuery = "SELECT * FROM paymentHist LIMIT ? OFFSET ?";
 
   db.query(countQuery, (err, countResult) => {
-    if (err) return res.status(500).json({message: 'Server Error'});
+    if (err) return res.status(500).json({ message: "Server Error" });
     const total = countResult[0].total;
     db.query(dataQuery, [limit, offset], (err, dataResult) => {
-      if (err) return res.status(500).json({message: 'Server Error'});
-      res.json({total, page, limit, totalPage: Math.ceil(total / limit), data: dataResult});
+      if (err) return res.status(500).json({ message: "Server Error" });
+      res.json({
+        total,
+        page,
+        limit,
+        totalPage: Math.ceil(total / limit),
+        data: dataResult,
+      });
     });
   });
 });
+
+// Fetch User Details
+app.get('/users', (req, res) => {
+  const sql = `SELECT d_id, id, username, user_email, user_balance, packages, Phone_number, Pin FROM users`;
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.log('Error selecting user details');
+      return res.status(500).json({message: 'Error selecting user details'})
+    }
+    res.status(200).json(result)
+  });
+});
+
 //  db.execute(
 //   `CREATE TABLE IF NOT EXISTS dataHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, api_response VARCHAR(255), balance_before INT, balance_after INT, mobile_number INT, plan INT, status VARCHAR(255), plan_network VARCHAR(10), plan_name VARCHAR(10), plan_amount INT, created_date TIMESTAMP, Ported_number TINYINT(1))`,
 //   (err, result) => {
@@ -722,12 +802,11 @@ app.get('/payment-history', (req, res) => {
 // );
 
 //Data webhook transaction histories
-app.post('/api/data=histories/webhook', async (req, res) => {
+app.post("/api/data=histories/webhook", async (req, res) => {
   const payload = req.body;
   console.log(payload);
-  res.status(200).json({message: 'Receipt received successfully'})
+  res.status(200).json({ message: "Receipt received successfully" });
 });
-
 
 //Logout route
 app.post("/logout", authenticateToken, (req, res) => {
