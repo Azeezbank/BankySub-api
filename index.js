@@ -108,7 +108,7 @@ db.getConnection((err, connection) => {
 
 //Route to register user
 app.post("/register", async (req, res) => {
-  const { password, username, email } = req.body;
+  const { password, username, email, phone } = req.body;
 
   db.query(
     `SELECT * FROM users WHERE user_email = ?`,
@@ -125,9 +125,9 @@ app.post("/register", async (req, res) => {
       try {
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const sql = `INSERT INTO users (user_pass, username, user_email) VALUES (?, ?, ?);`;
+        const sql = `INSERT INTO users (user_pass, username, user_email, Phone_number) VALUES (?, ?, ?, ?);`;
 
-        db.query(sql, [hashedPassword, username, email], (err, result) => {
+        db.query(sql, [hashedPassword, username, email, phone], (err, result) => {
           if (err) {
             console.error("Error registering user", err);
             return res.status(401).json({ message: "Error inserting user" });
