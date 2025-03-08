@@ -57,6 +57,14 @@ db.getConnection((err, connection) => {
 //   }
 // );
 
+// db.execute(`UPDATE users SET Phone_number = 07080079334 WHERE d_id = 1`, (err, result) => {
+//   if (err) throw err;
+//   console.log('added')
+// });
+db.execute(`ALTER TABLE users MODIFY COLUMN Phone_number VARCHAR(15)`, (err, result) => {
+  if (err) throw err;
+  console.log('added')
+});
 
 // db.execute(`CREATE TABLE IF NOT EXISTS networks(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //     if (err) throw err;
