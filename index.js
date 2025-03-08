@@ -823,9 +823,10 @@ app.post("/logout", authenticateToken, (req, res) => {
     secure: true,
     sameSite: "none",
   });
-  res.json({ message: "logout successfully" });
+  res.status(200).json({ message: "logout successfully" });
 });
 
+//Connection port
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
