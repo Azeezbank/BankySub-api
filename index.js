@@ -61,10 +61,7 @@ db.getConnection((err, connection) => {
 //   if (err) throw err;
 //   console.log('added')
 // });
-db.execute(`ALTER TABLE users MODIFY COLUMN Phone_number VARCHAR(15)`, (err, result) => {
-  if (err) throw err;
-  console.log('added')
-});
+
 
 // db.execute(`CREATE TABLE IF NOT EXISTS networks(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //     if (err) throw err;
@@ -791,14 +788,30 @@ app.get("/payment-history", (req, res) => {
 
 // Fetch User Details
 app.get('/users', (req, res) => {
-  const sql = `SELECT d_id, id, username, user_email, user_balance, packages, Phone_number, Pin FROM users`;
-  db.query(sql, (err, result) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  const countQuery = 'SELECT COUNT(*) AS total FROM users';
+  const sql = `SELECT d_id, id, username, user_email, user_balance, packages, Phone_number, Pin FROM users LIMIT ? OFFSET ?`;
+  db.query(countQuery, (err, countResult) => {
+    if (err) return res.status(500).json({ message: "Server Error" });
+    const total = countResult[0].total;
+  
+  db.query(sql, [limit, offset], (err, dataResult) => {
     if (err) {
       console.log('Error selecting user details');
       return res.status(500).json({message: 'Error selecting user details'})
     }
-    res.status(200).json(result)
+    res.status(200).json({
+      total,
+      page,
+      limit,
+      data: dataResult,
+      totalPage: Math.ceil(total/limit),
+    });
   });
+});
 });
 
 //  db.execute(
