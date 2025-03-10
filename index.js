@@ -807,7 +807,7 @@ app.get('/users', (req, res) => {
       total,
       page,
       limit,
-      totalPage: Math.ceil(total/limit),
+      totalPage: Math.ceil(total/2),
       data: dataResult,
     });
   });
