@@ -10,6 +10,7 @@ import JWT from "jsonwebtoken";
 import axios from "axios";
 import crypto from "crypto";
 import { log } from "console";
+import { release } from "os";
 
 const port = process.env.PORT || 3006;
 
@@ -35,7 +36,7 @@ const db = mysql.createPool({
   database: process.env.DB_DATABASE,
   waitForConnections: true,
   queueLimit: 0,
-  connectionLimit: 20,
+  connectionLimit: 10,
   port: process.env.DB_PORT,
 });
 
@@ -45,12 +46,11 @@ db.getConnection((err, connection) => {
     return;
   }
   console.log("Database connected" + " " + connection.threadId);
-  connection.release();
 });
 
 //Create table users
 // db.execute(
-//   `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, username VARCHAR(20), user_pass VARCHAR(255), user_email VARCHAR(100), user_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP, prev_balance INT, user_balance INT, packages ENUM('USER', 'RESELLER', 'API') DEFAULT 'USER', Phone_number INT, Pin INT)`,
+//   `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, username VARCHAR(20), user_pass VARCHAR(255), user_email VARCHAR(100), user_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP, prev_balance INT, user_balance INT, packages ENUM('USER', 'RESELLER', 'API') DEFAULT 'USER', Phone_number VARCHAR(15), Pin INT)`,
 //   (err, result) => {
 //     if (err) throw err;
 //     console.log("Table networks created");
@@ -61,7 +61,6 @@ db.getConnection((err, connection) => {
 //   if (err) throw err;
 //   console.log('added')
 // });
-
 
 // db.execute(`CREATE TABLE IF NOT EXISTS networks(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //     if (err) throw err;
@@ -132,15 +131,19 @@ app.post("/register", async (req, res) => {
 
         const sql = `INSERT INTO users (user_pass, username, user_email, Phone_number) VALUES (?, ?, ?, ?);`;
 
-        db.query(sql, [hashedPassword, username, email, phone], (err, result) => {
-          if (err) {
-            console.error("Error registering user", err);
-            return res.status(401).json({ message: "Error inserting user" });
+        db.query(
+          sql,
+          [hashedPassword, username, email, phone],
+          (err, result) => {
+            if (err) {
+              console.error("Error registering user", err);
+              return res.status(401).json({ message: "Error inserting user" });
+            }
+            return res
+              .status(200)
+              .json({ message: "User registered successfully" });
           }
-          return res
-            .status(200)
-            .json({ message: "User registered successfully" });
-        });
+        );
       } catch (hashError) {
         console.error("Error hashing password", hashError);
         return res.status(500).json({ message: "Error processing request" });
@@ -340,11 +343,9 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
                   (err, result) => {
                     if (err) {
                       console.error("Failed to deduct user wallet for airtime");
-                      return res
-                        .status(500)
-                        .json({
-                          message: "Failed to deduct user wallet for airtime",
-                        });
+                      return res.status(500).json({
+                        message: "Failed to deduct user wallet for airtime",
+                      });
                     }
 
                     db.execute(
@@ -353,11 +354,9 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
                       (err, result) => {
                         if (err) {
                           console.error("Failed to set previoud balance");
-                          return res
-                            .status(500)
-                            .json({
-                              message: "Failed to set previoud balance",
-                            });
+                          return res.status(500).json({
+                            message: "Failed to set previoud balance",
+                          });
                         }
 
                         if (
@@ -787,33 +786,35 @@ app.get("/payment-history", (req, res) => {
 });
 
 // Fetch User Details
-app.get('/users', (req, res) => {
+app.get("/users", (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
 
-  const countQuery = 'SELECT COUNT(*) AS total FROM users';
+  const countQuery = "SELECT COUNT(*) AS total FROM users";
   const sql = `SELECT d_id, id, username, user_email, user_balance, packages, Phone_number, Pin FROM users LIMIT ?, ?`;
   db.query(countQuery, (err, countResult) => {
     if (err) return res.status(500).json({ message: "Server Error" });
     const total = countResult[0].total;
-  
-  db.query(sql, [offset, limit], (err, dataResult) => {
-    if (err) {
-      console.log('Error selecting user details');
-      return res.status(500).json({message: 'Error selecting user details'})
-    }
-    res.status(200).json({
-      total,
-      page,
-      limit,
-      totalPage: Math.ceil(total/limit),
-      data: dataResult,
+
+    db.query(sql, [offset, limit], (err, dataResult) => {
+      if (err) {
+        console.log("Error selecting user details");
+        return res
+          .status(500)
+          .json({ message: "Error selecting user details" });
+      }
+      const totalPage = Math.ceil(total / limit);
+
+      res.status(200).json({
+        total,
+        page,
+        limit,
+        totalPage,
+        data: dataResult,
+      });
     });
-    console.log(totalPage);
-    console.log(total);
   });
-});
 });
 
 //  db.execute(
@@ -823,6 +824,68 @@ app.get('/users', (req, res) => {
 //     console.log("Table datahist created");
 //   }
 // );
+
+//setting details table
+// const sql = `CREATE TABLE IF NOT EXISTS admin_setting(d_id INT PRIMARY KEY AUTO_INCREMENT, whatsapp_phone VARCHAR(15), whatsapp_link VARCHAR(255), dash_message TEXT)`;
+// db.execute(sql, (err, result) => {
+//   if (err) throw err;
+//   console.log('admin setting table created')
+// });
+
+//setting details
+app.post("/api/admin-details", async (req, res) => {
+  const { whatsapp_phone, whatsapp_link, dash_message } = req.body;
+  db.query(`SELECT d_id FROM admin_setting`, (err, result) => {
+    if (err) {
+      console.log("Error fetching admin details", err);
+      return res.status(500).json({ message: "Error fetching admin details" });
+    }
+
+    if (result.length > 0) {
+      const userId = result[0].d_id;
+      db.execute(
+        `UPDATE admin_setting SET whatsapp_phone = ?, whatsapp_link = ?, dash_message = ? WHERE d_id = ?`,
+        [whatsapp_phone, whatsapp_link, dash_message, userId],
+        (err, result) => {
+          if (err) {
+            console.log("Error updating admin details", err);
+            return res
+              .status(500)
+              .json({ message: "Error updating admin details" });
+          }
+          return fetchUpdatedData(res);
+        }
+      );
+    } else {
+      db.execute(
+        `INSERT INTO admin_setting(whatsapp_phone, whatsapp_link, dash_message) VALUES(?, ?, ?)`,
+        [whatsapp_phone, whatsapp_link, dash_message],
+        (err, result) => {
+          if (err) {
+            console.log("Error inseting admin details", err);
+            return res.status(500).json({ message: "Error inserting admin details", err });
+          }
+          return fetchUpdatedData(res);
+        }
+      );
+    }
+  });
+
+  function fetchUpdatedData(res) {
+    db.query(
+      `SELECT whatsapp_phone, whatsapp_link, dash_message FROM admin_setting`,
+      (err, results) => {
+        if (err) {
+          console.log("Error fetching admin details", err);
+          return res
+            .status(500)
+            .json({ message: "Error fetching admin details" });
+        }
+        res.status(200).json(results[0]);
+      }
+    );
+  }
+});
 
 //Data webhook transaction histories
 app.post("/api/data=histories/webhook", async (req, res) => {
