@@ -833,8 +833,8 @@ app.get("/users", (req, res) => {
 //   console.log('admin setting table created')
 // });
 
-//setting details
-app.post("/api/admin-details", async (req, res) => {
+// Update setting details
+app.put('/api/updated=setting=details', async (req, res) => {
   const { whatsapp_phone, whatsapp_link, dash_message } = req.body;
   db.query(`SELECT d_id FROM admin_setting`, (err, result) => {
     if (err) {
@@ -854,7 +854,7 @@ app.post("/api/admin-details", async (req, res) => {
               .status(500)
               .json({ message: "Error updating admin details" });
           }
-          return fetchUpdatedData(res);
+          res.status(200).json({message: 'User details updated'})
         }
       );
     } else {
@@ -866,27 +866,44 @@ app.post("/api/admin-details", async (req, res) => {
             console.log("Error inseting admin details", err);
             return res.status(500).json({ message: "Error inserting admin details", err });
           }
-          return fetchUpdatedData(res);
+          res.status(200).json({message: 'User details inserted'})
         }
       );
     }
   });
 
-  function fetchUpdatedData(res) {
-    db.query(
-      `SELECT whatsapp_phone, whatsapp_link, dash_message FROM admin_setting`,
-      (err, results) => {
-        if (err) {
-          console.log("Error fetching admin details", err);
-          return res
-            .status(500)
-            .json({ message: "Error fetching admin details" });
-        }
-        res.status(200).json(results[0]);
-      }
-    );
-  }
+//   function fetchUpdatedData(res) {
+//     db.query(
+//       `SELECT whatsapp_phone, whatsapp_link, dash_message FROM admin_setting`,
+//       (err, results) => {
+//         if (err) {
+//           console.log("Error fetching admin details", err);
+//           return res
+//             .status(500)
+//             .json({ message: "Error fetching admin details" });
+//         }
+//         res.status(200).json(results[0]);
+//       }
+//     );
+//   }
 });
+
+//setting details 
+app.get("/api/admin-details" , (req, res) => {
+  db.execute(
+    `UPDATE admin_setting SET whatsapp_phone = ?, whatsapp_link = ?, dash_message = ? WHERE d_id = ?`,
+    [whatsapp_phone, whatsapp_link, dash_message, userId],
+    (err, result) => {
+      if (err) {
+        console.log("Error updating admin details", err);
+        return res
+          .status(500)
+          .json({ message: "Error updating admin details" });
+      }
+      res.status(200).json({message: 'User details fetched succesfully'})
+    }
+  );
+})
 
 //Data webhook transaction histories
 app.post("/api/data=histories/webhook", async (req, res) => {
@@ -905,6 +922,11 @@ app.post("/logout", authenticateToken, (req, res) => {
   res.status(200).json({ message: "logout successfully" });
 });
 
+
+db.query('SHOW PROCESSLIST', (err, result) => {
+  if (err) console.error('erreo', err.message);
+  else console.log('Acive', result)
+});
 //Connection port
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
