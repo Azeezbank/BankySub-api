@@ -46,6 +46,7 @@ db.getConnection((err, connection) => {
     return;
   }
   console.log("Database connected" + " " + connection.threadId);
+  connection.release();
 });
 
 //Create table users
