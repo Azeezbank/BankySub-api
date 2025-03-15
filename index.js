@@ -40,14 +40,14 @@ const db = mysql.createPool({
   port: process.env.DB_PORT,
 });
 
-db.getConnection((err, connection) => {
-  if (err) {
-    console.error("Database connection failed", err.stack);
-    return;
-  }
-  console.log("Database connected" + " " + connection.threadId);
-  connection.release();
-});
+// db.getConnection((err, connection) => {
+//   if (err) {
+//     console.error("Database connection failed", err.stack);
+//     return;
+//   }
+//   console.log("Database connected" + " " + connection.threadId);
+//   connection.release();
+// });
 
 //Create table users
 // db.execute(
@@ -891,14 +891,13 @@ app.put('/api/updated=setting=details', async (req, res) => {
 //setting details 
 app.get("/api/admin-details" , (req, res) => {
   db.execute(
-    `UPDATE admin_setting SET whatsapp_phone = ?, whatsapp_link = ?, dash_message = ? WHERE d_id = ?`,
-    [whatsapp_phone, whatsapp_link, dash_message, userId],
+    `SELECT whatsapp_phone, whatsapp_link, dash_message FROM admin_setting`,
     (err, result) => {
       if (err) {
-        console.log("Error updating admin details", err);
+        console.log("Error selecting admin details", err);
         return res
           .status(500)
-          .json({ message: "Error updating admin details" });
+          .json({ message: "Error selecting admin details" });
       }
       res.status(200).json({message: 'User details fetched succesfully'})
     }
