@@ -11,6 +11,8 @@ import axios from "axios";
 import crypto from "crypto";
 import { log } from "console";
 import { release } from "os";
+import { resolve } from "path";
+import { rejects } from "assert";
 
 const port = process.env.PORT || 3006;
 
@@ -40,13 +42,12 @@ const db = mysql.createPool({
   port: process.env.DB_PORT,
 });
 
-// db.getConnection((err, connection) => {
+// db.query("SELECT 1", (err, results) => {
 //   if (err) {
-//     console.error("Database connection failed", err.stack);
-//     return;
-//   }
-//   console.log("Database connected" + " " + connection.threadId);
-//   connection.release();
+//     console.error("Database connection failed", err.message);
+//   } else {
+//   console.log("Database connected");
+//    }
 // });
 
 //Create table users
@@ -78,21 +79,22 @@ const db = mysql.createPool({
 //   console.log("yes")
 // });
 
-// db.execute(`CREATE TABLE IF NOT EXISTS data_plans(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), network_name VARCHAR(10), data_type VARCHAR(10), validity VARCHAR(15), USER INT, is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
+// db.execute(`CREATE TABLE IF NOT EXISTS data_plans(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), network_name VARCHAR(10), data_type VARCHAR(25), validity VARCHAR(15), USER INT, RESELLER INT, API INT, is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //   if (err) throw err;
 //   console.log("Table plans created");
 // });
 
-// db.execute(`INSERT INTO data_plans(id, name, network_name, data_type, validity, USER) VALUES(7, '1 GB', 'MTN', 'SME', '30 days', 265)`, (err, result) => {
+// db.execute(`INSERT INTO data_plans(id, name, network_name, data_type, validity, USER, RESELLER, API) VALUES(424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133), (424, '500 MB', 'AIRTEL', 'SME', '1 day', 135, 134, 133)`, (err, result) => {
 //   if (err) throw err;
-//   console.log("yes")
-// });
-// db.execute(`INSERT INTO data_plans(id, name, network_name, data_type, validity, USER) VALUES(8, '2 GB', 'MTN', 'SME', '30 days', 534)`, (err, result) => {
-//   if (err) throw err;
-//   console.log("yes")
+//   console.log("Airtel SME data plan created")
 // });
 
-// db.execute(`ALTER TABLE data_types ADD network_name VARCHAR(15) `, (err, result) => {
+// db.execute(`update users SET packages = 'USER'`, (err, result) => {
+//   if (err) throw err;
+//   console.log("yes created")
+// });
+
+// db.execute(`ALTER TABLE data_plans MODIFY data_type VARCHAR(25) `, (err, result) => {
 //   if (err) throw err;
 //   console.log('AdedeEEE');
 // });
@@ -273,6 +275,56 @@ app.post("/data/plans", authenticateToken, (req, res) => {
       });
     }
   );
+});
+
+//Fetch mtn sme data
+app.get("/all-data-plan", async (req, res) => {
+  const sql = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api FROM data_plans`;
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.log("Failed to select mtn sme data", err);
+      return res.status(500).json({ error: "Failed to select mtn sme data" });
+    }
+    res.status(200).json(result);
+  });
+});
+
+// Update mtn sme data plans
+app.put("/update-sme", (req, res) => {
+  const mtnSme = req.body;
+  
+  const newPromise = mtnSme.map(({d_id, id, name, network_name, data_type, validity, user, reseller, api}) => {
+    const sql = `UPDATE data_plans SET id = ?, name = ?, network_name = ?, data_type = ?, validity = ?, user = ?, reseller = ?, api = ? WHERE d_id = ?`;
+    return new Promise((resolve, reject) => {
+      db.execute(sql, [id, name, network_name, data_type, validity, user, reseller, api, d_id], (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result); 
+        }
+      });
+    })
+  })
+  Promise.all(newPromise)
+  .then(() => {
+    res.status(200).json({ message: "All MTN SME data plans updated successfully" });
+  })
+  .catch((err) => {
+    console.error("Error updating data:", err);
+    res.status(500).json({ error: "Failed to update one or more plans", err });
+  });
+});
+
+//Fecth Airtel sme data
+app.get("/airtel-sme", async (req, res) => {
+  const sql = `SELECT id, name, validity, user, reseller, api FROM data_plans WHERE network_name = ? AND data_type = ?`;
+  db.query(sql, ["airtel", "sme"], (err, result) => {
+    if (err) {
+      console.log("Failed to select mtn sme data", err);
+      return res.status(500).json({ error: "Failed to select mtn sme data" });
+    }
+    res.status(200).json(result);
+  });
 });
 
 //Fetch data from API
@@ -834,7 +886,7 @@ app.get("/users", (req, res) => {
 // });
 
 // Update setting details
-app.put('/api/updated=setting=details', async (req, res) => {
+app.put("/api/updated=setting=details", async (req, res) => {
   const { whatsapp_phone, whatsapp_link, dash_message } = req.body;
   db.query(`SELECT d_id FROM admin_setting`, (err, result) => {
     if (err) {
@@ -854,7 +906,7 @@ app.put('/api/updated=setting=details', async (req, res) => {
               .status(500)
               .json({ message: "Error updating admin details" });
           }
-          res.status(200).json({message: 'User details updated'})
+          res.status(200).json({ message: "User details updated" });
         }
       );
     } else {
@@ -864,32 +916,19 @@ app.put('/api/updated=setting=details', async (req, res) => {
         (err, result) => {
           if (err) {
             console.log("Error inseting admin details", err);
-            return res.status(500).json({ message: "Error inserting admin details", err });
+            return res
+              .status(500)
+              .json({ message: "Error inserting admin details", err });
           }
-          res.status(200).json({message: 'User details inserted'})
+          res.status(200).json({ message: "User details inserted" });
         }
       );
     }
   });
-
-//   function fetchUpdatedData(res) {
-//     db.query(
-//       `SELECT whatsapp_phone, whatsapp_link, dash_message FROM admin_setting`,
-//       (err, results) => {
-//         if (err) {
-//           console.log("Error fetching admin details", err);
-//           return res
-//             .status(500)
-//             .json({ message: "Error fetching admin details" });
-//         }
-//         res.status(200).json(results[0]);
-//       }
-//     );
-//   }
 });
 
-//setting details 
-app.get("/api/admin-details" , (req, res) => {
+//setting details
+app.get("/api/admin-details", (req, res) => {
   db.execute(
     `SELECT whatsapp_phone, whatsapp_link, dash_message FROM admin_setting`,
     (err, result) => {
@@ -899,10 +938,24 @@ app.get("/api/admin-details" , (req, res) => {
           .status(500)
           .json({ message: "Error selecting admin details" });
       }
-      res.status(200).json({message: 'User details fetched succesfully'})
+      res.status(200).json(result[0]);
     }
   );
-})
+});
+
+//Fetch dashbord message
+app.get("/api/dashboard-message", (req, res) => {
+  const sql = `SELECT whatsapp_link, dash_message FROM admin_setting`;
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: "Error fetching dashboard message" });
+    }
+    res.status(200).json(result[0]);
+  });
+});
 
 //Data webhook transaction histories
 app.post("/api/data=histories/webhook", async (req, res) => {
@@ -921,11 +974,11 @@ app.post("/logout", authenticateToken, (req, res) => {
   res.status(200).json({ message: "logout successfully" });
 });
 
+// db.query('SHOW PROCESSLIST', (err, result) => {
+//   if (err) console.error('erreo', err.message);
+//   else console.log('Acive', result)
+// });
 
-db.query('SHOW PROCESSLIST', (err, result) => {
-  if (err) console.error('erreo', err.message);
-  else console.log('Acive', result)
-});
 //Connection port
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
