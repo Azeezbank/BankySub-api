@@ -277,7 +277,7 @@ app.post("/data/plans", authenticateToken, (req, res) => {
   );
 });
 
-//Fetch mtn sme data
+//Fetch mtn data plans
 app.get("/all-data-plan", async (req, res) => {
   const sql = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api FROM data_plans`;
   db.query(sql, (err, result) => {
@@ -289,8 +289,8 @@ app.get("/all-data-plan", async (req, res) => {
   });
 });
 
-// Update mtn sme data plans
-app.put("/update-sme", (req, res) => {
+// Update data plans
+app.put("/update-data-plans", (req, res) => {
   const mtnSme = req.body;
   
   const newPromise = mtnSme.map(({d_id, id, name, network_name, data_type, validity, user, reseller, api}) => {
@@ -316,16 +316,16 @@ app.put("/update-sme", (req, res) => {
 });
 
 //Fecth Airtel sme data
-app.get("/airtel-sme", async (req, res) => {
-  const sql = `SELECT id, name, validity, user, reseller, api FROM data_plans WHERE network_name = ? AND data_type = ?`;
-  db.query(sql, ["airtel", "sme"], (err, result) => {
-    if (err) {
-      console.log("Failed to select mtn sme data", err);
-      return res.status(500).json({ error: "Failed to select mtn sme data" });
-    }
-    res.status(200).json(result);
-  });
-});
+// app.get("/airtel-sme", async (req, res) => {
+//   const sql = `SELECT id, name, validity, user, reseller, api FROM data_plans WHERE network_name = ? AND data_type = ?`;
+//   db.query(sql, ["airtel", "sme"], (err, result) => {
+//     if (err) {
+//       console.log("Failed to select mtn sme data", err);
+//       return res.status(500).json({ error: "Failed to select mtn sme data" });
+//     }
+//     res.status(200).json(result);
+//   });
+// });
 
 //Fetch data from API
 app.post("/api/data=bundle", authenticateToken, async (req, res) => {
@@ -359,13 +359,13 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
           };
 
           const headers = {
-            Authorization: process.env.API_TOKEN,
+            Authorization: process.env.DATA_API_TOKEN,
             "Content-Type": "application/json",
           };
 
           try {
             const response = await axios.post(
-              "https://alrahuzdata.com.ng/api/data/",
+              process.env.DATA_API_URL,
               requestBody,
               { headers }
             );
@@ -520,13 +520,13 @@ app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
   };
 
   const headers = {
-    Authorization: process.env.API_TOKEN,
+    Authorization: process.env.AIRTIME_API_TOKEN,
     "Content-Type": "application/json",
   };
 
   try {
     const response = await axios.post(
-      "https://alrahuzdata.com.ng/api/topup/",
+      process.env.AIRTIME_API_URL,
       airtimeBody,
       { headers }
     );
