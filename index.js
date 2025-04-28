@@ -371,7 +371,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
             return res.status(500).json({ message: "Field to select network" });
           }
           const networkId = results[0].id;
-
+          console.log('This is network id', networkId);
           const id = result[0].id;
 
           const requestBody = {
