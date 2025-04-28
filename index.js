@@ -9,10 +9,10 @@ import JWT from "jsonwebtoken";
 //import multer from 'multer';
 import axios from "axios";
 import crypto from "crypto";
-import { log } from "console";
-import { release } from "os";
-import { resolve } from "path";
-import { rejects } from "assert";
+// import { log } from "console";
+// import { release } from "os";
+// import { resolve } from "path";
+// import { rejects } from "assert";
 
 const port = process.env.PORT || 3006;
 
@@ -354,7 +354,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
     const sql = `SELECT * FROM data_plans WHERE network_name = ? AND data_type = ? AND ${price} = ? AND is_active = 'active'`;
     db.query(sql, [choosenNetwork, choosenDataType, DataPrice], async (err, result) => {
       if (err) {
-        console.error(err.message);
+        console.error(err);
         return res.status(500).json({ error: "Data query error" });
       }
       if (result.length === 0) {
@@ -362,12 +362,12 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
         return res.status(404).json({ error: "Plan not found" });
       }
       db.query(
-        `SELECT id FROM networks WHERE name = ?`,
+        `SELECT d_id FROM networks WHERE name = ?`,
         [choosenNetwork],
         async (err, results) => {
           if (err) {
             console.error('Field to select network', err);
-            return res.status(500).json({ error: "Field to select network" });
+            return res.status(500).json({ message: "Field to select network" });
           }
           const networkId = results[0].id;
 
@@ -429,7 +429,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
             //Deduct payment
             db.execute(
               `SELECT user_balance FROM users WHERE d_id = ?`,
-              [userid],
+              [userId],
               (err, result) => {
                 if (err || result.length === 0) {
                   console.error("Error slecting user balance");
@@ -448,7 +448,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                 const newBalance = wallet - DataPrice;
                 db.execute(
                   `UPDATE users SET user_balance = ? WHERE d_id = ?`,
-                  [newBalance, userid],
+                  [newBalance, userId],
                   (err, result) => {
                     if (err) {
                       console.error("Failed to deduct user wallet for airtime");
@@ -459,7 +459,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
 
                     db.execute(
                       `UPDATE users SET prev_balance = ? WHERE d_id = ?`,
-                      [wallet, userid],
+                      [wallet, userId],
                       (err, result) => {
                         if (err) {
                           console.error("Failed to set previoud balance");
@@ -474,7 +474,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                         ) {
                           db.execute(
                             `UPDATE users SET user_balance = ? WHERE d_id = ?`,
-                            [wallet, userid],
+                            [wallet, userId],
                             (err, result) => {
                               if (err) {
                                 console.error("Failed to refund user");
