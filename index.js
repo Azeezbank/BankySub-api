@@ -94,10 +94,10 @@ const db = mysql.createPool({
 //   console.log("yes created")
 // });
 
- db.execute(`ALTER TABLE networks ADD id INT`, (err, result) => {
-   if (err) throw err;
-   console.log('AdedeEEE');
- });
+//  db.execute(`ALTER TABLE networks ADD id INT`, (err, result) => {
+//    if (err) throw err;
+//    console.log('AdedeEEE');
+//  });
 
 //User account details
 // db.execute(
@@ -380,9 +380,6 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
             plan: id,
             Ported_number: true,
           };
-
-          // const smeApiToken = process.env.SME_DATA_API_TOKEN;
-          // const smeApiUrl = process.env.SME_DATA_API_URL;
 
           let headers = {
       
