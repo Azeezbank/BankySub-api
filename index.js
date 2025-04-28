@@ -329,7 +329,7 @@ app.put("/update-data-plans", (req, res) => {
 
 //Fetch data from API
 app.post("/api/data=bundle", authenticateToken, async (req, res) => {
-  const { DataPrice, mobileNumber, choosenNetwork } = req.body;
+  const { DataPrice, mobileNumber, choosenNetwork, choosenDataType } = req.body;
   try {
     const sql = `SELECT * FROM data_plans WHERE price = ? AND is_active = 'active'`;
     db.query(sql, [DataPrice], async (err, result) => {
@@ -358,14 +358,47 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
             Ported_number: true,
           };
 
-          const headers = {
-            Authorization: process.env.DATA_API_TOKEN,
-            "Content-Type": "application/json",
+          // const smeApiToken = process.env.SME_DATA_API_TOKEN;
+          // const smeApiUrl = process.env.SME_DATA_API_URL;
+
+          let headers = {
+      
           };
 
+          if (choosenDataType === 'SME') {
+             headers = {
+              Authorization: process.env.SME_DATA_API_TOKEN,
+              "Content-Type": "application/json",
+            };
+          } else if (choosenDataType === 'GIFTING') {
+            headers = {
+              Authorization: process.env.GIFTING_DATA_API_TOKEN,
+              "Content-Type": "application/json",
+            };
+          } else if (choosenDataType === 'CORPORATE GIFTING') {
+            headers = {
+              Authorization: process.env.CORPORATE_DATA_API_TOKEN,
+              "Content-Type": "application/json",
+            };
+          } else {
+            console.log('Invalid API credentials');
+            return;
+          }
+
           try {
+            let apiUrl = '';
+            if (choosenDataType === 'SME') {
+              apiUrl = process.env.SME_DATA_API_URL;
+            } else if (choosenDataType === 'GIFTING') {
+              apiUrl = process.env.GIFTING_DATA_API_URL;
+            } else if (choosenDataType === 'CORPORATE GIFTING') {
+              apiUrl = process.env.CORPORATE_DATA_API_URL;
+            } else {
+              console.log('Invalid API url')
+            }
+
             const response = await axios.post(
-              process.env.DATA_API_URL,
+              apiUrl,
               requestBody,
               { headers }
             );
@@ -698,7 +731,7 @@ app.post("/api/user_account", authenticateToken, (req, res) => {
 //Select user details
 app.get("/api/user_info", authenticateToken, (req, res) => {
   const userid = req.user.id;
-  const sql = `SELECT username, user_balance FROM users WHERE d_id = ?`;
+  const sql = `SELECT username, user_balance, packages FROM users WHERE d_id = ?`;
   db.query(sql, [userid], (err, result) => {
     if (err) {
       return res.status(500).json({ message: "Error selecting user" });
