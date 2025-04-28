@@ -452,9 +452,9 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                   [newBalance, userId],
                   (err, result) => {
                     if (err) {
-                      console.error("Failed to deduct user wallet for airtime");
+                      console.error("Failed to deduct user wallet for Data");
                       return res.status(500).json({
-                        message: "Failed to deduct user wallet for airtime",
+                        message: "Failed to deduct user wallet for Data",
                       });
                     }
 
@@ -479,6 +479,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                             (err, result) => {
                               if (err) {
                                 console.error("Failed to refund user");
+                                return res.status(404).json({message: 'Failed to refund user'});
                               }
                               console.log("User refunded");
                             }
