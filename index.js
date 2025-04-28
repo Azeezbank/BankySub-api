@@ -330,15 +330,35 @@ app.put("/update-data-plans", (req, res) => {
 //Fetch data from API
 app.post("/api/data=bundle", authenticateToken, async (req, res) => {
   const { DataPrice, mobileNumber, choosenNetwork, choosenDataType } = req.body;
+  const userId = req.user.id;
   try {
-    const sql = `SELECT * FROM data_plans WHERE price = ? AND is_active = 'active'`;
-    db.query(sql, [DataPrice], async (err, result) => {
+    db.query(`SELECT packages FROM users WHERE d_id = ?`, async (err, userPack) => {
+      if (err) {
+        console.error("Error selecting user packages", err);
+        return res.status(500).json({message: 'Error selecting user packages'})
+      }
+      const userPackage = userPack[0].packages;
+
+      const price = '';
+      if (userPackage === 'USER') {
+        price = 'user';
+      } else if (userPackage === 'RESELLER') {
+        price = 'reseller';
+      } else if (userPackage === 'API') {
+        price = 'api'
+      } else {
+        console.log('No package found');
+        return;
+      }
+    
+    const sql = `SELECT * FROM data_plans WHERE network_name = ? AND data_type = ? AND ${price} = ? AND is_active = 'active'`;
+    db.query(sql, [choosenNetwork, choosenDataType, DataPrice], async (err, result) => {
       if (err) {
         console.error(err.message);
         return res.status(500).json({ error: "Data query error" });
       }
       if (result.length === 0) {
-        return res.status(404).json({ error: "Plan not founf" });
+        return res.status(404).json({ error: "Plan not found" });
       }
       db.query(
         `SELECT id FROM networks WHERE name = ?`,
@@ -394,7 +414,8 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
             } else if (choosenDataType === 'CORPORATE GIFTING') {
               apiUrl = process.env.CORPORATE_DATA_API_URL;
             } else {
-              console.log('Invalid API url')
+              console.log('Invalid API url');
+              return;
             }
 
             const response = await axios.post(
@@ -481,6 +502,7 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
         }
       );
     });
+  });
   } catch (err) {
     console.error("Server error", err.message);
     res.status(500).json({ error: "Server error" });
