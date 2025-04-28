@@ -358,6 +358,7 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
         return res.status(500).json({ error: "Data query error" });
       }
       if (result.length === 0) {
+        console.log('Plan not found');
         return res.status(404).json({ error: "Plan not found" });
       }
       db.query(
@@ -365,6 +366,7 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
         [choosenNetwork],
         async (err, results) => {
           if (err) {
+            console.error('Field to select network', err);
             return res.status(500).json({ error: "Field to select network" });
           }
           const networkId = results[0].id;
@@ -493,7 +495,7 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
           } catch (err) {
             console.error(
               "Failed to fetch from API",
-              err.response?.data || err.message
+              err
             );
             res
               .status(500)
@@ -504,7 +506,7 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
     });
   });
   } catch (err) {
-    console.error("Server error", err.message);
+    console.error("Server error", err);
     res.status(500).json({ error: "Server error" });
   }
 });
