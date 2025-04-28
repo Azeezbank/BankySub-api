@@ -339,7 +339,7 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
       }
       const userPackage = userPack[0].packages;
 
-      const price = '';
+      let price = '';
       if (userPackage === 'USER') {
         price = 'user';
       } else if (userPackage === 'RESELLER') {
