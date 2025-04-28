@@ -64,7 +64,7 @@ const db = mysql.createPool({
 //   console.log('added')
 // });
 
-// db.execute(`CREATE TABLE IF NOT EXISTS networks(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
+// db.execute(`CREATE TABLE IF NOT EXISTS networks(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //     if (err) throw err;
 //     console.log("Table networks created");
 // });
@@ -363,7 +363,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
         return res.status(404).json({ error: "Plan not found" });
       }
       db.query(
-        `SELECT d_id FROM networks WHERE name = ?`,
+        `SELECT id FROM networks WHERE name = ?`,
         [choosenNetwork],
         async (err, results) => {
           if (err) {
