@@ -332,7 +332,7 @@ app.post("/api/data=bundle", authenticateToken, async (req, res) => {
   const { DataPrice, mobileNumber, choosenNetwork, choosenDataType } = req.body;
   const userId = req.user.id;
   try {
-    db.query(`SELECT packages FROM users WHERE d_id = ?`, async (err, userPack) => {
+    db.query(`SELECT packages FROM users WHERE d_id = ?`, [userId], async (err, userPack) => {
       if (err) {
         console.error("Error selecting user packages", err);
         return res.status(500).json({message: 'Error selecting user packages'})
