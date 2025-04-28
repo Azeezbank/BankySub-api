@@ -94,10 +94,10 @@ const db = mysql.createPool({
 //   console.log("yes created")
 // });
 
-// db.execute(`ALTER TABLE data_plans MODIFY data_type VARCHAR(25) `, (err, result) => {
-//   if (err) throw err;
-//   console.log('AdedeEEE');
-// });
+ db.execute(`ALTER TABLE networks ADD id INT`, (err, result) => {
+   if (err) throw err;
+   console.log('AdedeEEE');
+ });
 
 //User account details
 // db.execute(
