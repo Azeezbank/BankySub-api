@@ -328,7 +328,7 @@ app.put("/update-data-plans", (req, res) => {
 // });
 
 //Fetch data from API
-app.post("/api/data=bundle", authenticateToken, async (req, res) => {
+app.post("/api/data/bundle", authenticateToken, async (req, res) => {
   const { DataPrice, mobileNumber, choosenNetwork, choosenDataType } = req.body;
   const userId = req.user.id;
   try {
