@@ -290,14 +290,27 @@ app.get("/all-data-plan", async (req, res) => {
   });
 });
 
+//update plans status
+app.put('/update/sme/data/status', (req, res) => {
+  const { isSmeActive } = req.body;
+  const sql = `UPDATE data_types SET is_active = ? WHERE name = 'SME'`;
+  db.execute(sql, [isSmeActive], (err, result) => {
+    if (err) {
+      console.log('Error updating SME data status', err);
+      return res.status(500).json({message: 'Error updating SME data status'})
+    }
+    res.status(200).json({message: 'SME data status updated successfully'})
+  })
+})
+
 // Update data plans
 app.put("/update-data-plans", (req, res) => {
   const mtnSme = req.body;
   
   const newPromise = mtnSme.map(({d_id, id, name, network_name, data_type, validity, user, reseller, api}) => {
-    const sql = `UPDATE data_plans SET id = ?, name = ?, network_name = ?, data_type = ?, validity = ?, user = ?, reseller = ?, api = ? WHERE d_id = ?`;
+    const sql = `UPDATE data_plans SET id = ?, name = ?, network_name = ?, data_type = ?, validity = ?, user = ?, reseller = ?, api = ?, is_active = ? WHERE d_id = ?`;
     return new Promise((resolve, reject) => {
-      db.execute(sql, [id, name, network_name, data_type, validity, user, reseller, api, d_id], (err, result) => {
+      db.execute(sql, [id, name, network_name, data_type, validity, user, reseller, api, is_active, d_id], (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -315,18 +328,6 @@ app.put("/update-data-plans", (req, res) => {
     res.status(500).json({ error: "Failed to update one or more plans", err });
   });
 });
-
-//Fecth Airtel sme data
-// app.get("/airtel-sme", async (req, res) => {
-//   const sql = `SELECT id, name, validity, user, reseller, api FROM data_plans WHERE network_name = ? AND data_type = ?`;
-//   db.query(sql, ["airtel", "sme"], (err, result) => {
-//     if (err) {
-//       console.log("Failed to select mtn sme data", err);
-//       return res.status(500).json({ error: "Failed to select mtn sme data" });
-//     }
-//     res.status(200).json(result);
-//   });
-// });
 
 //Fetch data from API
 app.post("/api/data/bundle", authenticateToken, async (req, res) => {
