@@ -238,6 +238,20 @@ app.post("/data/types", authenticateToken, (req, res) => {
   });
 });
 
+//Fetch data types for data types status
+app.put('/update/data/types/status', (req, res) => {
+  const { dataTypeNetworkName, dataTypeName, isDataTypeStatus } = req.body;
+  const sql = `UPDATE data_types SET is_active = ? WHERE network_name = ? name = ?`;
+  db.execute(sql, [isDataTypeStatus, dataTypeNetworkName, dataTypeName], async () => {
+    if (err) {
+      console.error('Failed to update data type status');
+      return res.status(500).json({message: 'Failed to update data type status'});
+    }
+    res.status(200).json({message: 'Data type status updated successfully'})
+  });
+});
+
+
 //Fetch data plans
 app.post("/data/plans", authenticateToken, (req, res) => {
   const { choosenNetwork, choosenDataType } = req.body;
@@ -688,7 +702,6 @@ const authenticate = async () => {
 app.post("/dedicated/account", authenticateToken, async (req, res) => {
   //Create dedicated account number
   const userid = req.user.id;
-  //console.log(userid);
   try {
     const token = await authenticate();
 
