@@ -241,7 +241,7 @@ app.post("/data/types", authenticateToken, (req, res) => {
 //Fetch data types for data types status
 app.put('/update/data/types/status', (req, res) => {
   const { dataTypeNetworkName, dataTypeName, isDataTypeStatus } = req.body;
-  const sql = `UPDATE data_types SET is_active = ? WHERE network_name = ? name = ?`;
+  const sql = `UPDATE data_types SET is_active = ? WHERE network_name = ? AND name = ?`;
   db.execute(sql, [isDataTypeStatus, dataTypeNetworkName, dataTypeName], async (err, result) => {
     if (err) {
       console.error('Failed to update data type status', err);
