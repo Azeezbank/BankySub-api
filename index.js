@@ -52,7 +52,7 @@ const db = mysql.createPool({
 
 //Create table users
 // db.execute(
-//   `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, username VARCHAR(20), user_pass VARCHAR(255), user_email VARCHAR(100), user_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP, prev_balance INT, user_balance INT, packages ENUM('USER', 'RESELLER', 'API') DEFAULT 'USER', Phone_number VARCHAR(15), Pin INT)`,
+//   `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, username VARCHAR(20), user_pass VARCHAR(255), user_email VARCHAR(100), user_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP, prev_balance INT, user_balance INT, packages ENUM('USER', 'RESELLER', 'API') DEFAULT 'USER', Phone_number VARCHAR(15), Pin INT, role ENUM('admin', 'user') DEFAULT 'user')`,
 //   (err, result) => {
 //     if (err) throw err;
 //     console.log("Table networks created");
@@ -94,7 +94,7 @@ const db = mysql.createPool({
 //   console.log("yes created")
 // });
 
-//  db.execute(`ALTER TABLE networks ADD id INT`, (err, result) => {
+//  db.execute(`ALTER TABLE users ADD role ENUM('admin', 'user') DEFAULT 'user'`, (err, result) => {
 //    if (err) throw err;
 //    console.log('AdedeEEE');
 //  });
@@ -768,7 +768,7 @@ app.post("/api/user_account", authenticateToken, (req, res) => {
 //Select user details
 app.get("/api/user_info", authenticateToken, (req, res) => {
   const userid = req.user.id;
-  const sql = `SELECT username, user_balance, packages FROM users WHERE d_id = ?`;
+  const sql = `SELECT username, user_balance, role, packages FROM users WHERE d_id = ?`;
   db.query(sql, [userid], (err, result) => {
     if (err) {
       return res.status(500).json({ message: "Error selecting user" });
