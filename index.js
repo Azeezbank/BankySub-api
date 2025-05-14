@@ -94,7 +94,7 @@ const db = mysql.createPool({
 //   console.log("yes created")
 // });
 
-//  db.execute(`ALTER TABLE users ADD role ENUM('admin', 'user') DEFAULT 'user'`, (err, result) => {
+//  db.execute(`ALTER TABLE users ADD nin INT DEFAULT 0`, (err, result) => {
 //    if (err) throw err;
 //    console.log('AdedeEEE');
 //  });
@@ -699,6 +699,7 @@ const authenticate = async () => {
 //   if (err) throw err;
 //   console.log('deleted')
 // })
+
 //Payment connection
 app.post("/dedicated/account", authenticateToken, async (req, res) => {
   //Create dedicated account number
@@ -706,17 +707,30 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
   try {
     const token = await authenticate();
 
+    const userD = `SELECT username, user_email, nin FROM users WHERE d_id = ?`;
+    db.query(userD, [userid], async (err, userDetails) => {
+      if (err) {
+        console.log(err.message);
+        return res.status(500).json({message: 'Unable to select user details'});
+      }
+      const userDetail = userDetails[0];
+    
+
+    if (userDetails.length === 0) {
+      return res.status(404).json({message: ' User Not Found'})
+    }
+
     const response = await axios.post(
       `${MON_BASE_URL}/api/v1/bank-transfer/reserved-accounts`,
       {
         accountReference: `${userid}`,
-        accountName: "Banky",
+        accountName: userDetail.username,
         currencyCode: "NGN",
         contractCode: MON_CONTRACT_CODE,
-        customerEmail: "bankoleazeezb98@gmail.com",
+        customerEmail: userDetail.user_email,
         // nin: "46182096878",
-        nin: process.env.nin,
-        customerName: "Bank",
+        nin: userDetails[0].nin,
+        customerName: userDetail.username,
         getAllAvailableBanks: true,
       },
       {
@@ -742,6 +756,7 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
       console.log("Bank details innserted");
       return res.status(200).json(response.data);
     });
+  });
   } catch (err) {
     console.error(err.response?.data || err.message);
     return res.status(500).json({ message: "Internal server error" });
