@@ -582,6 +582,7 @@ app.get("/api/airtimeT", authenticateToken, (req, res) => {
 app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
   const { airtimeNChoosen, airtimeTChoosen, mobileN, amount } = req.body;
   const userid = req.user.id;
+
   const airtimeBody = {
     network: airtimeNChoosen,
     amount: amount,
@@ -594,7 +595,7 @@ app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
     Authorization: process.env.AIRTIME_API_TOKEN,
     "Content-Type": "application/json",
   };
-
+console.log(process.env.AIRTIME_API_URL);
   try {
     const response = await axios.post(
       process.env.AIRTIME_API_URL,
