@@ -1064,9 +1064,21 @@ app.post("/logout", authenticateToken, (req, res) => {
 app.post("/verify/account", (req, res) => {
   const { verificationType, verificationNumber } = req.body;
   const userid = req.user.id;
-  if (verificationType === 'NIN') {
+
     if (verificationNumber.length !== 11) return res.status(400).json({message: 'Invalid NIN'})
-  const sql = `UPDATE users SET nin = ? WHERE d_id = ?`;
+
+     let type = '';
+    if (verificationType == 'NIN') {
+      type = 'nin';
+    } else if (verificationType === 'BVN') {
+      type = 'bvn';
+    } else {
+      console.log('Invalid verification type')
+      return res.status(404).json({message: 'Invalid verification type'})
+    };
+
+    console.log('User id', userid)
+  const sql = `UPDATE users SET ${type} = ? WHERE d_id = ?`;
   db.execute(sql, [verificationNumber, userid], (err, result) => {
     if (err) {
       console.error(err.message)
@@ -1074,20 +1086,7 @@ app.post("/verify/account", (req, res) => {
     }
     console.log('Success');
     res.status(200).json({message: 'User Account Verified'})
-  })
-  } else if (verificationType === 'BVN') {
-    const sql = `UPDATE users SET bvn = ? WHERE d_id = ?`;
-  db.execute(sql, [verificationNumber, userid], (err, result) => {
-    if (err) {
-      console.error(err.message)
-      return res.status(500).json({message: 'Failed to verify user account'})
-    }
-    res.status(200).json({message: 'User Account Verified'})
-  })
-} else {
-  console.log('No verification type found')
-  return res.status(404).json({message: 'No verification type found'});
-}
+  });
 });
 
 // db.query('SHOW PROCESSLIST', (err, result) => {
