@@ -6,13 +6,9 @@ import cors from "cors";
 import bcrypt from "bcrypt";
 import cookieParser from "cookie-parser";
 import JWT from "jsonwebtoken";
-//import multer from 'multer';
 import axios from "axios";
 import crypto from "crypto";
-// import { log } from "console";
-// import { release } from "os";
-// import { resolve } from "path";
-// import { rejects } from "assert";
+
 
 const port = process.env.PORT || 3006;
 
@@ -1061,7 +1057,7 @@ app.post("/logout", authenticateToken, (req, res) => {
 });
 
 //update user account verification
-app.post("/verify/account", (req, res) => {
+app.post("/verify/account", authenticateToken, (req, res) => {
   const { verificationType, verificationNumber } = req.body;
   const userid = req.user.id;
 
