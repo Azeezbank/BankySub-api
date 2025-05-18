@@ -290,7 +290,7 @@ app.post("/data/plans", authenticateToken, (req, res) => {
 
 //Fetch mtn data plans
 app.get("/all-data-plan", async (req, res) => {
-  const sql = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api FROM data_plans`;
+  const sql = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api, is_active FROM data_plans`;
   db.query(sql, (err, result) => {
     if (err) {
       console.log("Failed to select mtn sme data", err);
