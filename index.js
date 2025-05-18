@@ -317,7 +317,7 @@ app.put('/update/sme/data/status', (req, res) => {
 app.put("/update-data-plans", (req, res) => {
   const mtnSme = req.body;
   
-  const newPromise = mtnSme.map(({d_id, id, name, network_name, data_type, validity, user, reseller, api}) => {
+  const newPromise = mtnSme.map(({d_id, id, name, network_name, data_type, validity, user, reseller, api, is_active}) => {
     const sql = `UPDATE data_plans SET id = ?, name = ?, network_name = ?, data_type = ?, validity = ?, user = ?, reseller = ?, api = ?, is_active = ? WHERE d_id = ?`;
     return new Promise((resolve, reject) => {
       db.execute(sql, [id, name, network_name, data_type, validity, user, reseller, api, is_active, d_id], (err, result) => {
