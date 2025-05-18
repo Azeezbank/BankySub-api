@@ -1040,7 +1040,7 @@ app.get("/api/dashboard-message", (req, res) => {
 });
 
 //Data webhook transaction histories
-app.post("/api/data=histories/webhook", async (req, res) => {
+app.post("/api/data/histories/webhook", async (req, res) => {
   const payload = req.body;
   console.log(payload);
   res.status(200).json({ message: "Receipt received successfully" });
