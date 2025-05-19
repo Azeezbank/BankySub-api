@@ -478,8 +478,8 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                         }
 
                         if (
-                          response.data.results[0].status === "failed" ||
-                          response.data.results[0].status === "Failed"
+                          response.data.Status === "failed" ||
+                          response.data.Status === "Failed"
                         ) {
                           db.execute(
                             `UPDATE users SET user_balance = ? WHERE d_id = ?`,
