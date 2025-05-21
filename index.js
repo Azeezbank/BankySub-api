@@ -341,7 +341,7 @@ app.put("/update-data-plans", (req, res) => {
 
 //Fetch data from API
 app.post("/api/data/bundle", authenticateToken, async (req, res) => {
-  const { DataPrice, mobileNumber, choosenNetwork, choosenDataType } = req.body;
+  const { plan, DataPrice, mobileNumber, choosenNetwork, choosenDataType, status } = req.body;
   const userId = req.user.id;
   try {
     db.query(`SELECT packages FROM users WHERE d_id = ?`, [userId], async (err, userPack) => {
@@ -478,8 +478,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                         }
 
                         if (
-                          response.data.results[0].status === "failed" ||
-                          response.data.results[0].status === "Failed"
+                          response.data.results[0].status === "failed"
                         ) {
                           db.execute(
                             `UPDATE users SET user_balance = ? WHERE d_id = ?`,
@@ -495,7 +494,15 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                         } else {
                           console.log("Transaction successful");
                         }
+
+                        const dataHist = `INSERT INTO dataTransactionHist(id, plan, phone_number, amount, balance_before, balance_after, status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
+                        db.execute(dataHist, [userId, plan, mobileNumber, DataPrice, wallet, newBalance, status ], (err, result) => {
+                          if (err) {
+                            console.log('Failed to insert transaction record', err.message)
+                            return res.status(500).json({message: 'Failed to insert transaction record'})
+                          }
                         res.status(200).json(response.data);
+                        })
                       }
                     );
                   }
@@ -520,6 +527,19 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+  // get data transaction history
+  app.get("/api/data/history", authenticateToken, (req, res) => {
+    const userId = req.user.id;
+    const sql = `SELECT d_id, plan, phone_number, amount, balance_before, balance_after, status, time FROM dataTransactionHist id = ?`;
+    db.query(sql, [userId], (err, result) => {
+      if (err) {
+        console.error('Failed to select data transaction', err.message)
+        return res.status(500).json({message: 'Failed to select data transaction'})
+      }
+      res.status(200).json(result)
+    });
+  });
 
 //Airtime section
 //Create Airtime network table
@@ -724,7 +744,6 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
         currencyCode: "NGN",
         contractCode: MON_CONTRACT_CODE,
         customerEmail: userDetail.user_email,
-        // nin: "46182096878",
         nin: userDetails[0].nin,
         customerName: userDetail.username,
         getAllAvailableBanks: true,
@@ -953,18 +972,31 @@ app.get("/users", (req, res) => {
 });
 
 //  db.execute(
-//   `CREATE TABLE IF NOT EXISTS dataHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, api_response VARCHAR(255), balance_before INT, balance_after INT, mobile_number INT, plan INT, status VARCHAR(255), plan_network VARCHAR(10), plan_name VARCHAR(10), plan_amount INT, created_date TIMESTAMP, Ported_number TINYINT(1))`,
+//   `CREATE TABLE IF NOT EXISTS dataTransactionHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, plan VARCHAR(255), phone_number VARCHAR(20), amount VARCHAR(20), balance_before VARCHAR(20), balance_after VARCHAR(20), status VARCHAR(20), time DATETIME)`,
 //   (err, result) => {
 //     if (err) throw err;
 //     console.log("Table datahist created");
 //   }
 // );
 
+
 //setting details table
 // const sql = `CREATE TABLE IF NOT EXISTS admin_setting(d_id INT PRIMARY KEY AUTO_INCREMENT, whatsapp_phone VARCHAR(15), whatsapp_link VARCHAR(255), dash_message TEXT)`;
 // db.execute(sql, (err, result) => {
 //   if (err) throw err;
 //   console.log('admin setting table created')
+// });
+
+// Admin transaction history
+// const sql = `CREATE TABLE IF NOT EXISTS transactionWebHook(d_id INT AUTO_INCREMENT PRIMARY KEY,  webHook_response VARCHAR(800), create_date DATETIME)`;
+// db.execute(sql, (err, result) => {
+//   if (err) throw err;
+//   console.log('admindTranaction table created successfully');
+// });
+
+// db.execute(`DROP TABLE dataTransactionHist`, (err, result) => {
+//   if (err) throw err;
+//   console.log('Datble deleted')
 // });
 
 // Update setting details
@@ -1039,21 +1071,18 @@ app.get("/api/dashboard-message", (req, res) => {
   });
 });
 
-//Data webhook transaction histories
-app.post("/api/data/histories/webhook", async (req, res) => {
-  const payload = req.body;
-  console.log(payload);
-  res.status(200).json({ message: "Receipt received successfully" });
-});
 
-//Logout route
-app.post("/logout", authenticateToken, (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-  });
-  res.status(200).json({ message: "logout successfully" });
+//Data webhook transaction histories
+app.post("/api/transaction/histories/webhook", async (req, res) => {
+  const payload = req.body;
+  const sql = `INSERT INTO transactionWebHook(webHook_response) VALUES(?)`;
+  db.execute(sql, [payload], (err, results) => {
+    if (err) {
+      console.log('Failed to insert webhool transaction details');
+      return res.status(500).json({message: 'Failed to insert webhook transaction details'});
+    }
+    res.status(200).json({message: "Webhook transaction details has been successfully inserted"});
+  })
 });
 
 //update user account verification
@@ -1085,10 +1114,15 @@ app.post("/verify/account", authenticateToken, (req, res) => {
   });
 });
 
-// db.query('SHOW PROCESSLIST', (err, result) => {
-//   if (err) console.error('erreo', err.message);
-//   else console.log('Acive', result)
-// });
+//Logout route
+app.post("/logout", authenticateToken, (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  });
+  res.status(200).json({ message: "logout successfully" });
+});
 
 //Connection port
 app.listen(port, () => {
