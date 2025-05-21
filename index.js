@@ -531,7 +531,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
   // get data transaction history
   app.get("/api/data/history", authenticateToken, (req, res) => {
     const userId = req.user.id;
-    const sql = `SELECT d_id, plan, phone_number, amount, balance_before, balance_after, status, time FROM dataTransactionHist id = ?`;
+    const sql = `SELECT d_id, plan, phone_number, amount, balance_before, balance_after, status, time FROM dataTransactionHist WHERE id = ?`;
     db.query(sql, [userId], (err, result) => {
       if (err) {
         console.error('Failed to select data transaction', err.message)
