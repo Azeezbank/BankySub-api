@@ -9,7 +9,6 @@ import JWT from "jsonwebtoken";
 import axios from "axios";
 import crypto from "crypto";
 
-
 const port = process.env.PORT || 3006;
 
 const corsOptions = {
@@ -191,7 +190,7 @@ const authenticateToken = (req, res, next) => {
   const token = req.cookies.token;
 
   if (!token) {
-    console.log('Unauthorized');
+    console.log("Unauthorized");
     return res.status(401).json({ message: "unauthorized" });
   }
 
@@ -235,18 +234,25 @@ app.post("/data/types", authenticateToken, (req, res) => {
 });
 
 //Fetch data types for data types status
-app.put('/update/data/types/status', (req, res) => {
+app.put("/update/data/types/status", (req, res) => {
   const { dataTypeNetworkName, dataTypeName, isDataTypeStatus } = req.body;
   const sql = `UPDATE data_types SET is_active = ? WHERE network_name = ? AND name = ?`;
-  db.execute(sql, [isDataTypeStatus, dataTypeNetworkName, dataTypeName], async (err, result) => {
-    if (err) {
-      console.error('Failed to update data type status', err);
-      return res.status(500).json({message: 'Failed to update data type status'});
+  db.execute(
+    sql,
+    [isDataTypeStatus, dataTypeNetworkName, dataTypeName],
+    async (err, result) => {
+      if (err) {
+        console.error("Failed to update data type status", err);
+        return res
+          .status(500)
+          .json({ message: "Failed to update data type status" });
+      }
+      res
+        .status(200)
+        .json({ message: "Data type status updated successfully" });
     }
-    res.status(200).json({message: 'Data type status updated successfully'})
-  });
+  );
 });
-
 
 //Fetch data plans
 app.post("/data/plans", authenticateToken, (req, res) => {
@@ -302,275 +308,350 @@ app.get("/all-data-plan", authenticateToken, async (req, res) => {
 
 //Fetch mtn data plans by network
 app.get("/data/plan", authenticateToken, async (req, res) => {
-  const sql = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api, is_active FROM data_plans`;
+  const sql = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api, is_active FROM data_plans WHERE network_name = 'MTN'`;
+  const sql1 = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api, is_active FROM data_plans WHERE network_name = 'AIRTEL'`;
+  const sql2 = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api, is_active FROM data_plans WHERE network_name = 'GLO'`;
+  const sql3 = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api, is_active FROM data_plans WHERE network_name = '9MOBILE'`;
+
   db.query(sql, (err, mtn) => {
     if (err) {
       console.log("Failed to select mtn sme data", err);
       return res.status(500).json({ error: "Failed to select mtn data" });
     }
-    db.query(sql, (err, airtel) => {
+    db.query(sql1, (err, airtel) => {
       if (err) {
         console.log("Failed to select airtel sme data", err);
-      return res.status(500).json({ error: "Failed to select airtel data" });
+        return res.status(500).json({ error: "Failed to select airtel data" });
       }
-      db.query(sql, (err, glo) => {
-      if (err) {
-        console.log("Failed to select glo data", err);
-      return res.status(500).json({ error: "Failed to select glo data" });
-      }
-      db.query(sql, (err, mobile) => {
-      if (err) {
-        console.log("Failed to select 9mobile data", err);
-      return res.status(500).json({ error: "Failed to select 9mobile data" });
-      }
-    res.status(200).json({mtn, airtel, glo, mobile});
+      db.query(sql2, (err, glo) => {
+        if (err) {
+          console.log("Failed to select glo data", err);
+          return res.status(500).json({ error: "Failed to select glo data" });
+        }
+        db.query(sql3, (err, mobile) => {
+          if (err) {
+            console.log("Failed to select 9mobile data", err);
+            return res
+              .status(500)
+              .json({ error: "Failed to select 9mobile data" });
+          }
+          res.status(200).json({ mtn, airtel, glo, mobile });
+        });
       });
     });
   });
 });
-});
 
 //update plans status
-app.put('/update/sme/data/status', (req, res) => {
+app.put("/update/sme/data/status", (req, res) => {
   const { isSmeActive } = req.body;
   const sql = `UPDATE data_types SET is_active = ? WHERE name = 'SME'`;
   db.execute(sql, [isSmeActive], (err, result) => {
     if (err) {
-      console.log('Error updating SME data status', err);
-      return res.status(500).json({message: 'Error updating SME data status'})
+      console.log("Error updating SME data status", err);
+      return res
+        .status(500)
+        .json({ message: "Error updating SME data status" });
     }
-    res.status(200).json({message: 'SME data status updated successfully'})
-  })
-})
+    res.status(200).json({ message: "SME data status updated successfully" });
+  });
+});
 
 // Update data plans
 app.put("/update-data-plans", (req, res) => {
   const mtnSme = req.body;
-  
-  const newPromise = mtnSme.map(({d_id, id, name, network_name, data_type, validity, user, reseller, api, is_active}) => {
-    const sql = `UPDATE data_plans SET id = ?, name = ?, network_name = ?, data_type = ?, validity = ?, user = ?, reseller = ?, api = ?, is_active = ? WHERE d_id = ?`;
-    return new Promise((resolve, reject) => {
-      db.execute(sql, [id, name, network_name, data_type, validity, user, reseller, api, is_active, d_id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result); 
-        }
+
+  const newPromise = mtnSme.map(
+    ({
+      d_id,
+      id,
+      name,
+      network_name,
+      data_type,
+      validity,
+      user,
+      reseller,
+      api,
+      is_active,
+    }) => {
+      const sql = `UPDATE data_plans SET id = ?, name = ?, network_name = ?, data_type = ?, validity = ?, user = ?, reseller = ?, api = ?, is_active = ? WHERE d_id = ?`;
+      return new Promise((resolve, reject) => {
+        db.execute(
+          sql,
+          [
+            id,
+            name,
+            network_name,
+            data_type,
+            validity,
+            user,
+            reseller,
+            api,
+            is_active,
+            d_id,
+          ],
+          (err, result) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(result);
+            }
+          }
+        );
       });
-    })
-  })
+    }
+  );
   Promise.all(newPromise)
-  .then(() => {
-    res.status(200).json({ message: "All MTN SME data plans updated successfully" });
-  })
-  .catch((err) => {
-    console.error("Error updating data:", err);
-    res.status(500).json({ error: "Failed to update one or more plans", err });
-  });
+    .then(() => {
+      res
+        .status(200)
+        .json({ message: "All MTN SME data plans updated successfully" });
+    })
+    .catch((err) => {
+      console.error("Error updating data:", err);
+      res
+        .status(500)
+        .json({ error: "Failed to update one or more plans", err });
+    });
 });
 
 //Fetch data from API
 app.post("/api/data/bundle", authenticateToken, async (req, res) => {
-  const { plan, DataPrice, mobileNumber, choosenNetwork, choosenDataType } = req.body;
+  const { plan, DataPrice, mobileNumber, choosenNetwork, choosenDataType } =
+    req.body;
   const userId = req.user.id;
   try {
-    db.query(`SELECT packages FROM users WHERE d_id = ?`, [userId], async (err, userPack) => {
-      if (err) {
-        console.error("Error selecting user packages", err);
-        return res.status(500).json({message: 'Error selecting user packages'})
-      }
-      const userPackage = userPack[0].packages;
+    db.query(
+      `SELECT packages FROM users WHERE d_id = ?`,
+      [userId],
+      async (err, userPack) => {
+        if (err) {
+          console.error("Error selecting user packages", err);
+          return res
+            .status(500)
+            .json({ message: "Error selecting user packages" });
+        }
+        const userPackage = userPack[0].packages;
 
-      let price = '';
-      if (userPackage === 'USER') {
-        price = 'user';
-      } else if (userPackage === 'RESELLER') {
-        price = 'reseller';
-      } else if (userPackage === 'API') {
-        price = 'api'
-      } else {
-        console.log('No package found');
-        return;
-      }
-    
-    const sql = `SELECT * FROM data_plans WHERE network_name = ? AND data_type = ? AND ${price} = ? AND is_active = 'active'`;
-    db.query(sql, [choosenNetwork, choosenDataType, DataPrice], async (err, result) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: "Data query error" });
-      }
-      if (result.length === 0) {
-        console.log('Plan not found');
-        return res.status(404).json({ error: "Plan not found" });
-      }
-      db.query(
-        `SELECT id FROM networks WHERE name = ?`,
-        [choosenNetwork],
-        async (err, results) => {
-          if (err) {
-            console.error('Field to select network', err);
-            return res.status(500).json({ message: "Field to select network" });
-          }
-          const networkId = results[0].id;
-          console.log('This is network id', networkId);
-          const id = result[0].id;
+        let price = "";
+        if (userPackage === "USER") {
+          price = "user";
+        } else if (userPackage === "RESELLER") {
+          price = "reseller";
+        } else if (userPackage === "API") {
+          price = "api";
+        } else {
+          console.log("No package found");
+          return;
+        }
 
-          const requestBody = {
-            network: networkId,
-            mobile_number: mobileNumber,
-            plan: id,
-            Ported_number: true,
-          };
-
-          let headers = {
-      
-          };
-
-          if (choosenDataType === 'SME') {
-             headers = {
-              Authorization: process.env.SME_DATA_API_TOKEN,
-              "Content-Type": "application/json",
-            };
-          } else if (choosenDataType === 'GIFTING') {
-            headers = {
-              Authorization: process.env.GIFTING_DATA_API_TOKEN,
-              "Content-Type": "application/json",
-            };
-          } else if (choosenDataType === 'CORPORATE GIFTING') {
-            headers = {
-              Authorization: process.env.CORPORATE_DATA_API_TOKEN,
-              "Content-Type": "application/json",
-            };
-          } else {
-            console.log('Invalid API credentials');
-            return;
-          }
-
-          try {
-            let apiUrl = '';
-            if (choosenDataType === 'SME') {
-              apiUrl = process.env.SME_DATA_API_URL;
-            } else if (choosenDataType === 'GIFTING') {
-              apiUrl = process.env.GIFTING_DATA_API_URL;
-            } else if (choosenDataType === 'CORPORATE GIFTING') {
-              apiUrl = process.env.CORPORATE_DATA_API_URL;
-            } else {
-              console.log('Invalid API url');
-              return;
+        const sql = `SELECT * FROM data_plans WHERE network_name = ? AND data_type = ? AND ${price} = ? AND is_active = 'active'`;
+        db.query(
+          sql,
+          [choosenNetwork, choosenDataType, DataPrice],
+          async (err, result) => {
+            if (err) {
+              console.error(err);
+              return res.status(500).json({ error: "Data query error" });
             }
-
-            const response = await axios.post(
-              apiUrl,
-              requestBody,
-              { headers }
-            );
-
-            //Deduct payment
-            db.execute(
-              `SELECT user_balance FROM users WHERE d_id = ?`,
-              [userId],
-              (err, result) => {
-                if (err || result.length === 0) {
-                  console.error("Error slecting user balance");
+            if (result.length === 0) {
+              console.log("Plan not found");
+              return res.status(404).json({ error: "Plan not found" });
+            }
+            db.query(
+              `SELECT id FROM networks WHERE name = ?`,
+              [choosenNetwork],
+              async (err, results) => {
+                if (err) {
+                  console.error("Field to select network", err);
                   return res
                     .status(500)
-                    .json({ message: "Error slecting user balance" });
+                    .json({ message: "Field to select network" });
+                }
+                const networkId = results[0].id;
+                console.log("This is network id", networkId);
+                const id = result[0].id;
+
+                const requestBody = {
+                  network: networkId,
+                  mobile_number: mobileNumber,
+                  plan: id,
+                  Ported_number: true,
+                };
+
+                let headers = {};
+
+                if (choosenDataType === "SME") {
+                  headers = {
+                    Authorization: process.env.SME_DATA_API_TOKEN,
+                    "Content-Type": "application/json",
+                  };
+                } else if (choosenDataType === "GIFTING") {
+                  headers = {
+                    Authorization: process.env.GIFTING_DATA_API_TOKEN,
+                    "Content-Type": "application/json",
+                  };
+                } else if (choosenDataType === "CORPORATE GIFTING") {
+                  headers = {
+                    Authorization: process.env.CORPORATE_DATA_API_TOKEN,
+                    "Content-Type": "application/json",
+                  };
+                } else {
+                  console.log("Invalid API credentials");
+                  return;
                 }
 
-                const wallet = result[0].user_balance;
-                if (wallet < DataPrice) {
-                  console.error("Insufficient wallet balance");
-                  return res
-                    .status(404)
-                    .json({ message: "Insufficient wallet balance" });
-                }
-                const newBalance = wallet - DataPrice;
-                db.execute(
-                  `UPDATE users SET user_balance = ? WHERE d_id = ?`,
-                  [newBalance, userId],
-                  (err, result) => {
-                    if (err) {
-                      console.error("Failed to deduct user wallet for Data");
-                      return res.status(500).json({
-                        message: "Failed to deduct user wallet for Data",
-                      });
-                    }
+                try {
+                  let apiUrl = "";
+                  if (choosenDataType === "SME") {
+                    apiUrl = process.env.SME_DATA_API_URL;
+                  } else if (choosenDataType === "GIFTING") {
+                    apiUrl = process.env.GIFTING_DATA_API_URL;
+                  } else if (choosenDataType === "CORPORATE GIFTING") {
+                    apiUrl = process.env.CORPORATE_DATA_API_URL;
+                  } else {
+                    console.log("Invalid API url");
+                    return;
+                  }
 
-                    db.execute(
-                      `UPDATE users SET prev_balance = ? WHERE d_id = ?`,
-                      [wallet, userId],
-                      (err, result) => {
-                        if (err) {
-                          console.error("Failed to set previoud balance");
-                          return res.status(500).json({
-                            message: "Failed to set previoud balance",
-                          });
-                        }
+                  const response = await axios.post(apiUrl, requestBody, {
+                    headers,
+                  });
 
-                        if (
-                          response.data.status === "failed"
-                        ) {
+                  //Deduct payment
+                  db.execute(
+                    `SELECT user_balance FROM users WHERE d_id = ?`,
+                    [userId],
+                    (err, result) => {
+                      if (err || result.length === 0) {
+                        console.error("Error slecting user balance");
+                        return res
+                          .status(500)
+                          .json({ message: "Error slecting user balance" });
+                      }
+
+                      const wallet = result[0].user_balance;
+                      if (wallet < DataPrice) {
+                        console.error("Insufficient wallet balance");
+                        return res
+                          .status(404)
+                          .json({ message: "Insufficient wallet balance" });
+                      }
+                      const newBalance = wallet - DataPrice;
+                      db.execute(
+                        `UPDATE users SET user_balance = ? WHERE d_id = ?`,
+                        [newBalance, userId],
+                        (err, result) => {
+                          if (err) {
+                            console.error(
+                              "Failed to deduct user wallet for Data"
+                            );
+                            return res.status(500).json({
+                              message: "Failed to deduct user wallet for Data",
+                            });
+                          }
+
                           db.execute(
-                            `UPDATE users SET user_balance = ? WHERE d_id = ?`,
+                            `UPDATE users SET prev_balance = ? WHERE d_id = ?`,
                             [wallet, userId],
                             (err, result) => {
                               if (err) {
-                                console.error("Failed to refund user");
-                                return res.status(404).json({message: 'Failed to refund user'});
+                                console.error("Failed to set previoud balance");
+                                return res.status(500).json({
+                                  message: "Failed to set previoud balance",
+                                });
                               }
-                              console.log("User refunded");
+
+                              if (response.data.status === "failed") {
+                                db.execute(
+                                  `UPDATE users SET user_balance = ? WHERE d_id = ?`,
+                                  [wallet, userId],
+                                  (err, result) => {
+                                    if (err) {
+                                      console.error("Failed to refund user");
+                                      return res
+                                        .status(404)
+                                        .json({
+                                          message: "Failed to refund user",
+                                        });
+                                    }
+                                    console.log("User refunded");
+                                  }
+                                );
+                              } else {
+                                console.log("Transaction successful");
+                              }
+
+                              const status =
+                                response.status === 200
+                                  ? "Successfull"
+                                  : "Failed";
+                              const dataHist = `INSERT INTO dataTransactionHist(id, plan, phone_number, amount, balance_before, balance_after, status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
+                              db.execute(
+                                dataHist,
+                                [
+                                  userId,
+                                  plan,
+                                  mobileNumber,
+                                  DataPrice,
+                                  wallet,
+                                  newBalance,
+                                  status,
+                                ],
+                                (err, result) => {
+                                  if (err) {
+                                    console.log(
+                                      "Failed to insert transaction record",
+                                      err.message
+                                    );
+                                    return res
+                                      .status(500)
+                                      .json({
+                                        message:
+                                          "Failed to insert transaction record",
+                                      });
+                                  }
+                                  res.status(200).json(response.data);
+                                }
+                              );
                             }
                           );
-                        } else {
-                          console.log("Transaction successful");
                         }
-
-                        const status = response.status === 200 ? 'Successfull' : 'Failed';
-                        const dataHist = `INSERT INTO dataTransactionHist(id, plan, phone_number, amount, balance_before, balance_after, status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
-                        db.execute(dataHist, [userId, plan, mobileNumber, DataPrice, wallet, newBalance, status ], (err, result) => {
-                          if (err) {
-                            console.log('Failed to insert transaction record', err.message)
-                            return res.status(500).json({message: 'Failed to insert transaction record'})
-                          }
-                        res.status(200).json(response.data);
-                        })
-                      }
-                    );
-                  }
-                );
+                      );
+                    }
+                  );
+                } catch (err) {
+                  console.error("Failed to fetch from API", err);
+                  res
+                    .status(500)
+                    .json({ error: "Failed to fetch data from external API" });
+                }
               }
             );
-          } catch (err) {
-            console.error(
-              "Failed to fetch from API",
-              err
-            );
-            res
-              .status(500)
-              .json({ error: "Failed to fetch data from external API" });
           }
-        }
-      );
-    });
-  });
+        );
+      }
+    );
   } catch (err) {
     console.error("Server error", err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
-  // get data transaction history
-  app.get("/api/data/history", authenticateToken, (req, res) => {
-    const userId = req.user.id;
-    const sql = `SELECT d_id, plan, phone_number, amount, balance_before, balance_after, status, time FROM dataTransactionHist WHERE id = ?`;
-    db.query(sql, [userId], (err, result) => {
-      if (err) {
-        console.error('Failed to select data transaction', err.message)
-        return res.status(500).json({message: 'Failed to select data transaction'})
-      }
-      res.status(200).json(result)
-    });
+// get data transaction history
+app.get("/api/data/history", authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  const sql = `SELECT d_id, plan, phone_number, amount, balance_before, balance_after, status, time FROM dataTransactionHist WHERE id = ?`;
+  db.query(sql, [userId], (err, result) => {
+    if (err) {
+      console.error("Failed to select data transaction", err.message);
+      return res
+        .status(500)
+        .json({ message: "Failed to select data transaction" });
+    }
+    res.status(200).json(result);
   });
+});
 
 //Airtime section
 //Create Airtime network table
@@ -653,7 +734,7 @@ app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
     Authorization: process.env.AIRTIME_API_TOKEN,
     "Content-Type": "application/json",
   };
-console.log(process.env.AIRTIME_API_URL);
+  console.log(process.env.AIRTIME_API_URL);
   try {
     const response = await axios.post(
       process.env.AIRTIME_API_URL,
@@ -719,17 +800,38 @@ console.log(process.env.AIRTIME_API_URL);
                   console.log("Transaction successful");
                 }
 
-                const status = response.status === 200 ? 'Successful' : 'Failed';
+                const status =
+                  response.status === 200 ? "Successful" : "Failed";
 
                 const hist = `INSERT INTO airtimeHist(id, network, amount, phone_number, previous_balance, new_balance, status, airtimeType) VALUES(?, ?, ?, ?, ?, ?, ?, ?)`;
-                 db.execute(hist, [userid, airtimeNChoosen, mobileN, wallet, newBalance, status, airtimeTChoosen], (err, result) => {
-                  if (err) {
-                    console.log('Failed to insert airtime transaction history', err.message);
-                    return res.status(500).json({message: 'Failed to insert airtime transaction history'});
-                  }
+                db.execute(
+                  hist,
+                  [
+                    userid,
+                    airtimeNChoosen,
+                    mobileN,
+                    wallet,
+                    newBalance,
+                    status,
+                    airtimeTChoosen,
+                  ],
+                  (err, result) => {
+                    if (err) {
+                      console.log(
+                        "Failed to insert airtime transaction history",
+                        err.message
+                      );
+                      return res
+                        .status(500)
+                        .json({
+                          message:
+                            "Failed to insert airtime transaction history",
+                        });
+                    }
 
-                res.status(200).json(response.data);
-                });
+                    res.status(200).json(response.data);
+                  }
+                );
               }
             );
           }
@@ -750,14 +852,15 @@ app.get("/api/airtime/history", authenticateToken, (req, res) => {
   const sql = `SELECT d_id, network, amount, phone_number, previous_balance, new_balance, status, airtimeType, time FROM airtimeHist WHERE id = ?`;
   db.query(sql, [userid], (err, result) => {
     if (err) {
-      console.log('Failed to select airtime transaction history', err.message);
-      return res.status(500).jsom({message: 'Failed to select airtime transaction history'})
+      console.log("Failed to select airtime transaction history", err.message);
+      return res
+        .status(500)
+        .jsom({ message: "Failed to select airtime transaction history" });
     }
 
-    res.status(200).json(result)
+    res.status(200).json(result);
   });
 });
-
 
 const { MON_API_KEY, MON_SECRET_KEY, MON_CONTRACT_CODE, MON_BASE_URL } =
   process.env;
@@ -796,51 +899,56 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
     db.query(userD, [userid], async (err, userDetails) => {
       if (err) {
         console.log(err.message);
-        return res.status(500).json({message: 'Unable to select user details'});
-      }
-      const userDetail = userDetails[0];
-    
-
-    if (userDetails.length === 0) {
-      return res.status(404).json({message: ' User Not Found'})
-    }
-
-    const response = await axios.post(
-      `${MON_BASE_URL}/api/v1/bank-transfer/reserved-accounts`,
-      {
-        accountReference: `${randomRef}`,
-        accountName: userDetail.username,
-        currencyCode: "NGN",
-        contractCode: MON_CONTRACT_CODE,
-        customerEmail: userDetail.user_email,
-        nin: userDetails[0].nin,
-        customerName: userDetail.username,
-        getAllAvailableBanks: true,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    console.log(response.data.responseBody);
-    const acctNo = response.data.responseBody.accountNumber;
-    const acctName = response.data.responseBody.accountName;
-    const bankName = response.data.responseBody.bankName;
-    const refrence = response.data.responseBody.accountReference;
-    const sql = `INSERT INTO userBankDetails1 (id, acct_id, acctNo, acctName, bankName) VALUES (?, ?, ?, ?)`;
-    db.query(sql, [userid, refrence, acctNo, acctName, bankName], (err, result) => {
-      if (err) {
-        console.log("Error inserting bank details");
         return res
           .status(500)
-          .json({ message: "Error inserting bank details" });
+          .json({ message: "Unable to select user details" });
       }
-      console.log("Bank details innserted");
-      return res.status(200).json(response.data);
+      const userDetail = userDetails[0];
+
+      if (userDetails.length === 0) {
+        return res.status(404).json({ message: " User Not Found" });
+      }
+
+      const response = await axios.post(
+        `${MON_BASE_URL}/api/v1/bank-transfer/reserved-accounts`,
+        {
+          accountReference: `${randomRef}`,
+          accountName: userDetail.username,
+          currencyCode: "NGN",
+          contractCode: MON_CONTRACT_CODE,
+          customerEmail: userDetail.user_email,
+          nin: userDetails[0].nin,
+          customerName: userDetail.username,
+          getAllAvailableBanks: true,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log(response.data.responseBody);
+      const acctNo = response.data.responseBody.accountNumber;
+      const acctName = response.data.responseBody.accountName;
+      const bankName = response.data.responseBody.bankName;
+      const refrence = response.data.responseBody.accountReference;
+      const sql = `INSERT INTO userBankDetails1 (id, acct_id, acctNo, acctName, bankName) VALUES (?, ?, ?, ?)`;
+      db.query(
+        sql,
+        [userid, refrence, acctNo, acctName, bankName],
+        (err, result) => {
+          if (err) {
+            console.log("Error inserting bank details");
+            return res
+              .status(500)
+              .json({ message: "Error inserting bank details" });
+          }
+          console.log("Bank details innserted");
+          return res.status(200).json(response.data);
+        }
+      );
     });
-  });
   } catch (err) {
     console.error(err.response?.data || err.message);
     return res.status(500).json({ message: "Internal server error" });
@@ -1048,7 +1156,6 @@ app.get("/users", (req, res) => {
 //   }
 // );
 
-
 //setting details table
 // const sql = `CREATE TABLE IF NOT EXISTS admin_setting(d_id INT PRIMARY KEY AUTO_INCREMENT, whatsapp_phone VARCHAR(15), whatsapp_link VARCHAR(255), dash_message TEXT)`;
 // db.execute(sql, (err, result) => {
@@ -1140,18 +1247,23 @@ app.get("/api/dashboard-message", (req, res) => {
   });
 });
 
-
 //Data webhook transaction histories
 app.post("/api/transaction/histories/webhook", async (req, res) => {
   const payload = req.body;
   const sql = `INSERT INTO transactionWebHook(webHook_response) VALUES(?)`;
   db.execute(sql, [payload], (err, results) => {
     if (err) {
-      console.log('Failed to insert webhool transaction details');
-      return res.status(500).json({message: 'Failed to insert webhook transaction details'});
+      console.log("Failed to insert webhool transaction details");
+      return res
+        .status(500)
+        .json({ message: "Failed to insert webhook transaction details" });
     }
-    res.status(200).json({message: "Webhook transaction details has been successfully inserted"});
-  })
+    res
+      .status(200)
+      .json({
+        message: "Webhook transaction details has been successfully inserted",
+      });
+  });
 });
 
 //update user account verification
@@ -1159,27 +1271,28 @@ app.post("/verify/account", authenticateToken, (req, res) => {
   const { verificationType, verificationNumber } = req.body;
   const userid = req.user.id;
 
-    if (verificationNumber.length !== 11) return res.status(400).json({message: 'Invalid NIN'})
+  if (verificationNumber.length !== 11)
+    return res.status(400).json({ message: "Invalid NIN" });
 
-     let type = '';
-    if (verificationType == 'NIN') {
-      type = 'nin';
-    } else if (verificationType === 'BVN') {
-      type = 'bvn';
-    } else {
-      console.log('Invalid verification type')
-      return res.status(404).json({message: 'Invalid verification type'})
-    };
+  let type = "";
+  if (verificationType == "NIN") {
+    type = "nin";
+  } else if (verificationType === "BVN") {
+    type = "bvn";
+  } else {
+    console.log("Invalid verification type");
+    return res.status(404).json({ message: "Invalid verification type" });
+  }
 
-    console.log('User id', userid)
+  console.log("User id", userid);
   const sql = `UPDATE users SET ${type} = ? WHERE d_id = ?`;
   db.execute(sql, [verificationNumber, userid], (err, result) => {
     if (err) {
-      console.error(err.message)
-      return res.status(500).json({message: 'Failed to verify user account'})
+      console.error(err.message);
+      return res.status(500).json({ message: "Failed to verify user account" });
     }
-    console.log('Success');
-    res.status(200).json({message: 'User Account Verified'})
+    console.log("Success");
+    res.status(200).json({ message: "User Account Verified" });
   });
 });
 
