@@ -307,7 +307,7 @@ app.get("/all-data-plan", authenticateToken, async (req, res) => {
 });
 
 //Fetch mtn data plans by network
-app.get("/data/plan", authenticateToken, async (req, res) => {
+app.get("/data/plan", async (req, res) => {
   const sql = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api, is_active FROM data_plans WHERE network_name = 'MTN'`;
   const sql1 = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api, is_active FROM data_plans WHERE network_name = 'AIRTEL'`;
   const sql2 = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api, is_active FROM data_plans WHERE network_name = 'GLO'`;
