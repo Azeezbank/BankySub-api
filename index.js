@@ -90,7 +90,7 @@ const db = mysql.createPool({
 //   console.log("yes created")
 // });
 
-//  db.execute(`ALTER TABLE users ADD nin INT DEFAULT 0`, (err, result) => {
+//  db.execute(`ALTER TABLE userBankDetails1 ADD acct_id INT`, (err, result) => {
 //    if (err) throw err;
 //    console.log('AdedeEEE');
 //  });
@@ -289,7 +289,7 @@ app.post("/data/plans", authenticateToken, (req, res) => {
 });
 
 //Fetch mtn data plans
-app.get("/all-data-plan", async (req, res) => {
+app.get("/all-data-plan", authenticateToken, async (req, res) => {
   const sql = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api, is_active FROM data_plans`;
   db.query(sql, (err, result) => {
     if (err) {
@@ -298,6 +298,36 @@ app.get("/all-data-plan", async (req, res) => {
     }
     res.status(200).json(result);
   });
+});
+
+//Fetch mtn data plans by network
+app.get("/data/plan", authenticateToken, async (req, res) => {
+  const sql = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api, is_active FROM data_plans`;
+  db.query(sql, (err, mtn) => {
+    if (err) {
+      console.log("Failed to select mtn sme data", err);
+      return res.status(500).json({ error: "Failed to select mtn data" });
+    }
+    db.query(sql, (err, airtel) => {
+      if (err) {
+        console.log("Failed to select airtel sme data", err);
+      return res.status(500).json({ error: "Failed to select airtel data" });
+      }
+      db.query(sql, (err, glo) => {
+      if (err) {
+        console.log("Failed to select glo data", err);
+      return res.status(500).json({ error: "Failed to select glo data" });
+      }
+      db.query(sql, (err, mobile) => {
+      if (err) {
+        console.log("Failed to select 9mobile data", err);
+      return res.status(500).json({ error: "Failed to select 9mobile data" });
+      }
+    res.status(200).json({mtn, airtel, glo, mobile});
+      });
+    });
+  });
+});
 });
 
 //update plans status
@@ -341,7 +371,7 @@ app.put("/update-data-plans", (req, res) => {
 
 //Fetch data from API
 app.post("/api/data/bundle", authenticateToken, async (req, res) => {
-  const { plan, DataPrice, mobileNumber, choosenNetwork, choosenDataType, status } = req.body;
+  const { plan, DataPrice, mobileNumber, choosenNetwork, choosenDataType } = req.body;
   const userId = req.user.id;
   try {
     db.query(`SELECT packages FROM users WHERE d_id = ?`, [userId], async (err, userPack) => {
@@ -495,6 +525,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                           console.log("Transaction successful");
                         }
 
+                        const status = response.status === 200 ? 'Successfull' : 'Failed';
                         const dataHist = `INSERT INTO dataTransactionHist(id, plan, phone_number, amount, balance_before, balance_after, status) VALUES(?, ?, ?, ?, ?, ?, ?)`;
                         db.execute(dataHist, [userId, plan, mobileNumber, DataPrice, wallet, newBalance, status ], (err, result) => {
                           if (err) {
@@ -560,6 +591,17 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
 // db.execute(AirtimeT, (err, result) => {
 //   if (err) throw err;
 //   console.log("Airtime Type Table created");
+// });
+
+//Create Airtime history table
+// db.execute(`CREATE TABLE IF NOT EXISTS airtimeHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, network VARCHAR(15), airtimeType VARCHAR(20), amount VARCHAR(15), phone_number VARCHAR(20), previous_balance VARCHAR(15), new_balance VARCHAR(15), time DATETIME, status VARCHAR(15))`, (err, res) => {
+//   if (err) throw err;
+//   console.log('airtime record table created')
+// });
+
+// db.execute(`ALTER TABLE airtimeHist ADD airtimeType VARCHAR(20)`, (err, result) => {
+//   if (err) throw err;
+//   console.log('aitime tyope added')
 // });
 
 //Insert into Airtime type table
@@ -660,13 +702,13 @@ console.log(process.env.AIRTIME_API_URL);
                 }
 
                 if (
-                  response.data.results[0].status === "failed" ||
-                  response.data.results[0].status === "Failed"
+                  response.data.status === "failed" ||
+                  response.data.status === "Failed"
                 ) {
                   db.execute(
                     `UPDATE users SET user_balance = ? WHERE d_id = ?`,
                     [wallet, userid],
-                    (err, result) => {
+                    async (err, result) => {
                       if (err) {
                         console.error("Failed to refund user");
                       }
@@ -676,7 +718,18 @@ console.log(process.env.AIRTIME_API_URL);
                 } else {
                   console.log("Transaction successful");
                 }
+
+                const status = response.status === 200 ? 'Successful' : 'Failed';
+
+                const hist = `INSERT INTO airtimeHist(id, network, amount, phone_number, previous_balance, new_balance, status, airtimeType) VALUES(?, ?, ?, ?, ?, ?, ?, ?)`;
+                 db.execute(hist, [userid, airtimeNChoosen, mobileN, wallet, newBalance, status, airtimeTChoosen], (err, result) => {
+                  if (err) {
+                    console.log('Failed to insert airtime transaction history', err.message);
+                    return res.status(500).json({message: 'Failed to insert airtime transaction history'});
+                  }
+
                 res.status(200).json(response.data);
+                });
               }
             );
           }
@@ -690,6 +743,21 @@ console.log(process.env.AIRTIME_API_URL);
       .json({ error: "Failed to fetch Airtime from external API" });
   }
 });
+
+// Fetch airtime transaction histories
+app.get("/api/airtime/history", authenticateToken, (req, res) => {
+  const userid = req.user.id;
+  const sql = `SELECT d_id, network, amount, phone_number, previous_balance, new_balance, status, airtimeType, time FROM airtimeHist WHERE id = ?`;
+  db.query(sql, [userid], (err, result) => {
+    if (err) {
+      console.log('Failed to select airtime transaction history', err.message);
+      return res.status(500).jsom({message: 'Failed to select airtime transaction history'})
+    }
+
+    res.status(200).json(result)
+  });
+});
+
 
 const { MON_API_KEY, MON_SECRET_KEY, MON_CONTRACT_CODE, MON_BASE_URL } =
   process.env;
@@ -722,6 +790,7 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
   const userid = req.user.id;
   try {
     const token = await authenticate();
+    const randomRef = Math.floor(1000 + Math.random() * 9000);
 
     const userD = `SELECT username, user_email, nin FROM users WHERE d_id = ?`;
     db.query(userD, [userid], async (err, userDetails) => {
@@ -739,7 +808,7 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
     const response = await axios.post(
       `${MON_BASE_URL}/api/v1/bank-transfer/reserved-accounts`,
       {
-        accountReference: `${userid}`,
+        accountReference: `${randomRef}`,
         accountName: userDetail.username,
         currencyCode: "NGN",
         contractCode: MON_CONTRACT_CODE,
@@ -760,8 +829,8 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
     const acctName = response.data.responseBody.accountName;
     const bankName = response.data.responseBody.bankName;
     const refrence = response.data.responseBody.accountReference;
-    const sql = `INSERT INTO userBankDetails1 (id, acctNo, acctName, bankName) VALUES (?, ?, ?, ?)`;
-    db.query(sql, [refrence, acctNo, acctName, bankName], (err, result) => {
+    const sql = `INSERT INTO userBankDetails1 (id, acct_id, acctNo, acctName, bankName) VALUES (?, ?, ?, ?)`;
+    db.query(sql, [userid, refrence, acctNo, acctName, bankName], (err, result) => {
       if (err) {
         console.log("Error inserting bank details");
         return res
