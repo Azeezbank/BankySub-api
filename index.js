@@ -639,7 +639,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
 // get data transaction history
 app.get("/api/data/history", authenticateToken, (req, res) => {
   const userId = req.user.id;
-  const sql = `SELECT d_id, plan, phone_number, amount, balance_before, balance_after, status, time FROM dataTransactionHist WHERE id = ?`;
+  const sql = `SELECT d_id, plan, phone_number, amount, balance_before, balance_after, status, time FROM dataTransactionHist WHERE id = ? ORDER BY time DESC`;
   db.query(sql, [userId], (err, result) => {
     if (err) {
       console.error("Failed to select data transaction", err.message);
@@ -799,7 +799,7 @@ app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
                 }
 
                 const status =
-                  response.status === 200 ? "Successful" : "Failed";
+                  response.data.Status;
 
                 const hist = `INSERT INTO airtimeHist(id, network, amount, phone_number, previous_balance, new_balance, status, airtimeType) VALUES(?, ?, ?, ?, ?, ?, ?, ?)`;
                 db.execute(
