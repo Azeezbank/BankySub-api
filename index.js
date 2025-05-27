@@ -295,7 +295,7 @@ app.post("/data/plans", authenticateToken, (req, res) => {
 });
 
 //Fetch mtn data plans
-app.get("/all-data-plan", authenticateToken, async (req, res) => {
+app.get("/all/data/plan", authenticateToken, async (req, res) => {
   const sql = `SELECT d_id, id, name, network_name, data_type, validity, user, reseller, api, is_active FROM data_plans`;
   db.query(sql, (err, result) => {
     if (err) {
@@ -801,7 +801,7 @@ app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
                 const status =
                   response.data.Status;
 
-                const hist = `INSERT INTO airtimeHist(id, network, amount, phone_number, previous_balance, new_balance, status, airtimeType) VALUES(?, ?, ?, ?, ?, ?, ?, ?)`;
+                const hist = `INSERT INTO airtimeHist(id, network, amount, phone_number, previous_balance, new_balance, status, airtimeType, time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
                 db.execute(
                   hist,
                   [
@@ -847,7 +847,7 @@ app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
 // Fetch airtime transaction histories
 app.get("/api/airtime/history", authenticateToken, (req, res) => {
   const userid = req.user.id;
-  const sql = `SELECT d_id, network, amount, phone_number, previous_balance, new_balance, status, airtimeType, time FROM airtimeHist WHERE id = ?`;
+  const sql = `SELECT d_id, network, amount, phone_number, previous_balance, new_balance, status, airtimeType, time FROM airtimeHist WHERE id = ? ORDER BY time DESC`;
   db.query(sql, [userid], (err, result) => {
     if (err) {
       console.log("Failed to select airtime transaction history", err.message);
