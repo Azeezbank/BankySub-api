@@ -1,13 +1,13 @@
 import mysql from "mysql2";
 import express from "express";
 import dotenv from "dotenv";
-//import nodemailer from "nodemailer";
 import cors from "cors";
 import bcrypt from "bcrypt";
 import cookieParser from "cookie-parser";
 import JWT from "jsonwebtoken";
 import axios from "axios";
 import crypto from "crypto";
+import transporter from "./mailer";
 
 const port = process.env.PORT || 3006;
 
@@ -54,10 +54,6 @@ const db = mysql.createPool({
 //   }
 // );
 
-// db.execute(`UPDATE users SET Phone_number = 07080079334 WHERE d_id = 1`, (err, result) => {
-//   if (err) throw err;
-//   console.log('added')
-// });
 
 // db.execute(`CREATE TABLE IF NOT EXISTS networks(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
 //     if (err) throw err;
@@ -69,9 +65,9 @@ const db = mysql.createPool({
 //     console.log("Table data_types created");
 // });
 
-// db.execute(`INSERT INTO data_types(name, network_name) VALUES('SME', 'AIRTEL')`, (err, result) => {
+// db.execute(`INSERT INTO data_types(name, network_name) VALUES('GIFTING', 'GLO')`, (err, result) => {
 //   if (err) throw err;
-//   console.log("yes")
+//   console.log("TYPES ADDED")
 // });
 
 // db.execute(`CREATE TABLE IF NOT EXISTS data_plans(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), network_name VARCHAR(10), data_type VARCHAR(25), validity VARCHAR(15), USER INT, RESELLER INT, API INT, is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
@@ -89,7 +85,7 @@ const db = mysql.createPool({
 //   console.log("yes created")
 // });
 
-//  db.execute(`ALTER TABLE userBankDetails1 ADD acct_id INT`, (err, result) => {
+//  db.execute(`ALTER TABLE users ADD isverified ENUM('true', 'false') DEFAULT 'false'`, (err, result) => {
 //    if (err) throw err;
 //    console.log('AdedeEEE');
 //  });
@@ -126,20 +122,30 @@ app.post("/register", async (req, res) => {
 
       try {
         const hashedPassword = await bcrypt.hash(password, 10);
+        const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-        const sql = `INSERT INTO users (user_pass, username, user_email, Phone_number) VALUES (?, ?, ?, ?);`;
+        const sql = `INSERT INTO users (user_pass, username, user_email, Phone_number, verificationOTP) VALUES (?, ?, ?, ?, ?);`;
 
         db.query(
           sql,
-          [hashedPassword, username, email, phone],
-          (err, result) => {
+          [hashedPassword, username, email, phone, verificationCode],
+          async (err, result) => {
             if (err) {
               console.error("Error registering user", err);
               return res.status(401).json({ message: "Error inserting user" });
             }
+
+            // Send email
+                await transporter.sendMail({
+                  from: process.env.EMAIL_USER,
+                  to: email,
+                  subject: "Verify your email",
+                  html: `<p>Your verification code is <b>${verificationCode}</b></p>`,
+                });
+
             return res
               .status(200)
-              .json({ message: "User registered successfully" });
+              .json({ message: "User registered successfully, verification code has been sent to your mail" });
           }
         );
       } catch (hashError) {
@@ -148,6 +154,28 @@ app.post("/register", async (req, res) => {
       }
     }
   );
+});
+
+//Verify user mail
+app.post('/verify/mail', (req, res) => {
+  const { otp } = req.body;
+  const sql = `SELECT * FROM users WHERE verificationOTP = ?`;
+  db.query(sql, [otp], (err, result) => {
+    if (err || result.length === 0 || result.verificationCode !== otp) {
+      console.error('Invalid Verification Code', err);
+      return res.status(404).json({message: 'Invalid Verification Code, Please input valid verification code'});
+    }
+    
+    const code = result[0].verificationCode;
+    const sql2 = `UPDATE users SET isverified = 'true' WHERE verificationOTP = ?`;
+    db.execute(sql2, [code], (err, updateUser) => {
+      if (err) {
+        console.error('Failed to verify user', err.message);
+        return res.status(500).json({message: 'Failed to verify user'});
+      }
+      res.status(200).json({message: 'User Verified Successfully'});
+    });
+  });
 });
 
 //user login
@@ -160,6 +188,10 @@ app.post("/login", (req, res) => {
     (err, results) => {
       if (err || results.length === 0)
         return res.status(404).json({ message: "User not found" });
+      if (results.isverified === 'false') {
+        console.log('User mail not verified, please verify your mail', err)
+        return res.status(503).json({message: 'User mail not verified, please verify your mail'})
+      }
 
       const user = results[0];
       const passwordIsValid = bcrypt.compareSync(password, user.user_pass);
@@ -496,6 +528,21 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                     Authorization: process.env.CORPORATE_DATA_API_TOKEN,
                     "Content-Type": "application/json",
                   };
+                } else if (choosenDataType === 'SME2') {
+                  headers = {
+                    Authorization: process.env.SME2_DATA_API_TOKEN,
+                    "Content-Type": "application/json",
+                  }
+                } else if (choosenDataType === 'DATA SHARE') {
+                  headers = {
+                    Authorization: process.env.DATA_SHARE_API_TOKEN,
+                    "Content-Type": "application/json",
+                  }
+                } else if (choosenDataType === 'DATA COUPON') {
+                  headers = {
+                     Authorization: process.env.DATA_COUPON_API_TOKEN,
+                    "Content-Type": "application/json",
+                  }
                 } else {
                   console.log("Invalid API credentials");
                   return;
@@ -509,6 +556,12 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                     apiUrl = process.env.GIFTING_DATA_API_URL;
                   } else if (choosenDataType === "CORPORATE GIFTING") {
                     apiUrl = process.env.CORPORATE_DATA_API_URL;
+                  } else if (choosenDataType === "SME2") {
+                    apiUrl = process.env.SME2_DATA_API_URL;
+                  } else if (choosenDataType === 'DATA SHARE') {
+                    apiUrl = process.env.DATA_SHARE_API_URL;
+                  } else if (choosenDataType === 'DATA COUPON') {
+                    apiUrl = process.env.DATA_COUPON_API_URL;
                   } else {
                     console.log("Invalid API url");
                     return;
@@ -1088,6 +1141,12 @@ app.post("/monnify/webhook", async (req, res) => {
     console.error("Error inserting payment:", err);
   }
 });
+
+//Fund user manually
+app.post("/api/fund/user", (req, res) => {
+const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, prev_balance, user_balance) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+})
+
 
 // fetch payment history
 app.get("/payment-history", (req, res) => {
