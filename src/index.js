@@ -182,6 +182,7 @@ app.post('/verify/mail', (req, res) => {
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
+  try {
   db.query(
     "SELECT * FROM users WHERE username = ?",
     [username],
@@ -189,13 +190,16 @@ app.post("/login", (req, res) => {
       if (err || results.length === 0) {
         console.log("User not found", err.message);
         return res.status(404).json({ message: "User not found" });
-      } else if (results[0].isverified === 'false') {
+      }
+      const user = results[0];
+      
+      if (user.isverified === 'false') {
         console.log('User mail not verified, please verify your mail', err);
         const email = results[0].user_email;
         const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        try {
+        
         // Send email
-                await transporter.sendMail({
+                transporter.sendMail({
                   from: process.env.EMAIL_USER,
                   to: email,
                   subject: "Verify your email",
@@ -211,14 +215,8 @@ app.post("/login", (req, res) => {
         
         return res.status(503).json({message: 'User mail not verified, please verify your mail. An OTP has been sent to your mail.'})
         });
-      } catch (emailError) {
-          console.error('Failed to send verification email', emailError.message);
-          return res.status(500).json({ message: 'Failed to send verification email' });
-        }
-        return;
       }
 
-      const user = results[0];
       const passwordIsValid = bcrypt.compareSync(password, user.user_pass);
 
       if (!passwordIsValid)
@@ -240,6 +238,10 @@ app.post("/login", (req, res) => {
       res.status(200).json({ message: "login successful" });
     }
   );
+  } catch (err) {
+          console.error('Failed to send verification email', err.message);
+          return res.status(500).json({ message: 'Failed to send verification email' });
+        }
 });
 
 //Middleware to protect routes
