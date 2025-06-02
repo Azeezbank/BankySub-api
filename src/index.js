@@ -161,7 +161,7 @@ app.post('/verify/mail', (req, res) => {
   const { otp } = req.body;
   const sql = `SELECT * FROM users WHERE verificationOTP = ?`;
   db.query(sql, [otp], (err, result) => {
-    if (err || result.length === 0 || result.verificationCode !== otp) {
+    if (err || result.length === 0 || result[0].verificationCode !== otp) {
       console.error('Invalid Verification Code', err);
       return res.status(404).json({message: 'Invalid Verification Code, Please input valid verification code'});
     }
@@ -189,9 +189,17 @@ app.post("/login", (req, res) => {
       if (err || results.length === 0) {
         console.log("User not found", err.message);
         return res.status(404).json({ message: "User not found" });
-      } else if (results.isverified === 'false') {
-        console.log('User mail not verified, please verify your mail', err)
-        return res.status(503).json({message: 'User mail not verified, please verify your mail'})
+      } else if (results[0].isverified === 'false') {
+        console.log('User mail not verified, please verify your mail', err);
+        const email = results[0].email;
+        // Send email
+                await transporter.sendMail({
+                  from: process.env.EMAIL_USER,
+                  to: email,
+                  subject: "Verify your email",
+                  html: `<p>Your verification code is <b>${verificationCode}</b></p>`,
+                });
+        return res.status(503).json({message: 'User mail not verified, please verify your mail. An OTP has been sent to your mail.'})
       }
 
       const user = results[0];
