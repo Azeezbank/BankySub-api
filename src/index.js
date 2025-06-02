@@ -192,6 +192,8 @@ app.post("/login", (req, res) => {
       } else if (results[0].isverified === 'false') {
         console.log('User mail not verified, please verify your mail', err);
         const email = results[0].email;
+        const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        
         // Send email
                 await transporter.sendMail({
                   from: process.env.EMAIL_USER,
@@ -199,7 +201,16 @@ app.post("/login", (req, res) => {
                   subject: "Verify your email",
                   html: `<p>Your verification code is <b>${verificationCode}</b></p>`,
                 });
+
+        const sql = `UPDATE users SET verificationOTP = ? WHERE username = ?`;
+        db.execute(sql, [verificationCode, username], (err, updatedCode) => {
+          if (err) {
+            console.error('Failed to Update user verification code', err.message);
+            return res.status(500).json({message: 'Failed to Update user verification code'});
+          }
+        
         return res.status(503).json({message: 'User mail not verified, please verify your mail. An OTP has been sent to your mail.'})
+        });
       }
 
       const user = results[0];
