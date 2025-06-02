@@ -166,7 +166,7 @@ app.post('/verify/mail', (req, res) => {
       return res.status(404).json({message: 'Invalid Verification Code, Please input valid verification code'});
     }
     
-    const code = result[0].verificationCode;
+    const code = result[0].verificationOTP;
     const sql2 = `UPDATE users SET isverified = 'true' WHERE verificationOTP = ?`;
     db.execute(sql2, [code], (err, updateUser) => {
       if (err) {
