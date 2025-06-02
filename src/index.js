@@ -186,9 +186,10 @@ app.post("/login", (req, res) => {
     "SELECT * FROM users WHERE username = ?",
     [username],
     (err, results) => {
-      if (err || results.length === 0)
+      if (err || results.length === 0) {
+        console.log("User not found", err.message);
         return res.status(404).json({ message: "User not found" });
-      if (results.isverified === 'false') {
+      } else if (results.isverified === 'false') {
         console.log('User mail not verified, please verify your mail', err)
         return res.status(503).json({message: 'User mail not verified, please verify your mail'})
       }
