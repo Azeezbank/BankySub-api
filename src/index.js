@@ -182,7 +182,6 @@ app.post('/verify/mail', (req, res) => {
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
-  try {
   db.query(
     "SELECT * FROM users WHERE username = ?",
     [username],
@@ -207,7 +206,7 @@ app.post("/login", (req, res) => {
                 });
 
         const sql = `UPDATE users SET verificationOTP = ? WHERE username = ?`;
-        db.execute(sql, [verificationCode, username], (err, updatedCode) => {
+        return db.execute(sql, [verificationCode, username], (err, updatedCode) => {
           if (err) {
             console.error('Failed to Update user verification code', err.message);
             return res.status(500).json({message: 'Failed to Update user verification code'});
@@ -238,10 +237,6 @@ app.post("/login", (req, res) => {
       res.status(200).json({ message: "login successful" });
     }
   );
-  } catch (err) {
-          console.error('Failed to send verification email', err.message);
-          return res.status(500).json({ message: 'Failed to send verification email' });
-        }
 });
 
 //Middleware to protect routes
