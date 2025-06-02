@@ -7,7 +7,7 @@ import cookieParser from "cookie-parser";
 import JWT from "jsonwebtoken";
 import axios from "axios";
 import crypto from "crypto";
-import transporter from "./mailer";
+import transporter from "./mailer.js";
 
 const port = process.env.PORT || 3006;
 
