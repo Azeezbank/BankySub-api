@@ -206,7 +206,7 @@ app.post("/login", (req, res) => {
                 });
 
         const sql = `UPDATE users SET verificationOTP = ? WHERE username = ?`;
-        return db.execute(sql, [verificationCode, username], (err, updatedCode) => {
+        db.execute(sql, [verificationCode, username], (err, updatedCode) => {
           if (err) {
             console.error('Failed to Update user verification code', err.message);
             return res.status(500).json({message: 'Failed to Update user verification code'});
@@ -214,6 +214,7 @@ app.post("/login", (req, res) => {
         
         return res.status(503).json({message: 'User mail not verified, please verify your mail. An OTP has been sent to your mail.'})
         });
+        return;
       }
 
       const passwordIsValid = bcrypt.compareSync(password, user.user_pass);
