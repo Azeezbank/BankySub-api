@@ -191,7 +191,7 @@ app.post("/login", (req, res) => {
         return res.status(404).json({ message: "User not found" });
       } else if (results[0].isverified === 'false') {
         console.log('User mail not verified, please verify your mail', err);
-        const email = results[0].email;
+        const email = results[0].user_email;
         const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
         
         // Send email
