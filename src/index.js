@@ -185,7 +185,7 @@ app.post("/login", (req, res) => {
   db.query(
     "SELECT * FROM users WHERE username = ?",
     [username],
-    (err, results) => {
+    async (err, results) => {
       if (err || results.length === 0) {
         console.log("User not found", err.message);
         return res.status(404).json({ message: "User not found" });
