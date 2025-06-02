@@ -161,8 +161,8 @@ app.post('/verify/mail', (req, res) => {
   const { otp } = req.body;
   const sql = `SELECT * FROM users WHERE verificationOTP = ?`;
   db.query(sql, [otp], (err, result) => {
-    if (err || result.length === 0 || result[0].verificationCode !== otp) {
-      console.error('Invalid Verification Code', err);
+    if (err || result.length === 0 || result[0].verificationOTP !== otp) {
+      console.error('Invalid Verification Code', err.message);
       return res.status(404).json({message: 'Invalid Verification Code, Please input valid verification code'});
     }
     
