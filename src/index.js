@@ -193,7 +193,7 @@ app.post("/login", (req, res) => {
         console.log('User mail not verified, please verify your mail', err);
         const email = results[0].user_email;
         const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        
+        try {
         // Send email
                 await transporter.sendMail({
                   from: process.env.EMAIL_USER,
@@ -211,6 +211,11 @@ app.post("/login", (req, res) => {
         
         return res.status(503).json({message: 'User mail not verified, please verify your mail. An OTP has been sent to your mail.'})
         });
+      } catch (emailError) {
+          console.error('Failed to send verification email', emailError.message);
+          return res.status(500).json({ message: 'Failed to send verification email' });
+        }
+        return;
       }
 
       const user = results[0];
