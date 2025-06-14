@@ -85,7 +85,8 @@ const db = mysql.createPool({
 //   console.log("yes created")
 // });
 
-//  db.execute(`ALTER TABLE users ADD isverified ENUM('true', 'false') DEFAULT 'false'`, (err, result) => {
+// const sql = `ALTER TABLE users DROP COLUMN id`;
+//  db.execute(sql, (err, result) => {
 //    if (err) throw err;
 //    console.log('AdedeEEE');
 //  });
@@ -106,7 +107,7 @@ const db = mysql.createPool({
 
 //Route to register user
 app.post("/register", async (req, res) => {
-  const { password, username, email, phone } = req.body;
+  const { password, username, email, phone, fullName } = req.body;
 
   db.query(
     `SELECT * FROM users WHERE user_email = ?`,
@@ -124,11 +125,11 @@ app.post("/register", async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-        const sql = `INSERT INTO users (user_pass, username, user_email, Phone_number, verificationOTP) VALUES (?, ?, ?, ?, ?);`;
+        const sql = `INSERT INTO users (user_pass, username, user_email, Phone_number, verificationOTP, fullName) VALUES (?, ?, ?, ?, ?, ?);`;
 
         db.query(
           sql,
-          [hashedPassword, username, email, phone, verificationCode],
+          [hashedPassword, username, email, phone, verificationCode, fullName],
           async (err, result) => {
             if (err) {
               console.error("Error registering user", err);
@@ -1062,6 +1063,19 @@ app.get("/api/user_info", authenticateToken, (req, res) => {
   });
 });
 
+//Select user details by id
+app.get("/api/user_info/:id", authenticateToken, (req, res) => {
+  const id = req.params;
+    const sql = `SELECT d_id, username, user_email, user_balance, packages, Phone_number, Pin, fullName FROM users WHERE d_id = ?`;
+    db.query(sql, [id], (err, result) => {
+      if (err) {
+        console.error('Failed to select user details', err.message);
+        return res.status(500).json({message: 'Failed to select user details'});
+      }
+      res.status(200).json(result)
+    });
+});
+
 //Payment transaction table
 // const sql2 = `CREATE TABLE IF NOT EXISTS paymentHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, event_type VARCHAR(100), payment_ref VARCHAR(255), paid_on DATETIME, amount INT, payment_method VARCHAR(255), payment_status VARCHAR(50), prev_balance INT, user_balance INT)`;
 // db.execute(sql2, (err, result) => {
@@ -1166,9 +1180,36 @@ app.post("/monnify/webhook", async (req, res) => {
 });
 
 //Fund user manually
-app.post("/api/fund/user", (req, res) => {
+app.post("/api/fund/user", authenticateToken, (req, res) => {
+  const amount = req.body.amount;
+  const id = req.user.id;
+  const event_type = "Manual Fund";
+  const payment_ref = 'Admin Approved';
+  const payment_method = "Manual";
+  const payment_status = 'Approved';
+  const paid_on = new Date().toISOString().slice(0, 19).replace("T", " "); 
+  
+
+  db.query(`SELECT user_balance FROM users WHERE d_id = ?`, [id], (err, result) => {
+    if (err || result.length === 0) {
+      console.error("Error selecting user balance", err.message);
+      return res.status(500).json({ message: "Error selecting user balance" });
+    }
+
+    const walletBalance = result[0].user_balance;
+
+    const newBalance = walletBalance + amount;
+
 const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, prev_balance, user_balance) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+db.execute(sql, [id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, walletBalance, newBalance], (err, results) => {
+  if (err) {
+    console.error('Failed to insert funding record', err.message);
+    return res.status(500).json({message: 'Failed to insert funding recorf'});
+  }
+  res.status(200).json({message: 'Wallet Funded Manually successfully'});
 })
+});
+});
 
 
 // fetch payment history
@@ -1235,9 +1276,9 @@ app.get("/users", (req, res) => {
 //     console.log("Table datahist created");
 //   }
 // );
-
+ 
 //setting details table
-// const sql = `CREATE TABLE IF NOT EXISTS admin_setting(d_id INT PRIMARY KEY AUTO_INCREMENT, whatsapp_phone VARCHAR(15), whatsapp_link VARCHAR(255), dash_message TEXT)`;
+// const sql = `CREATE TABLE IF NOT EXISTS admin_setting(d_id INT PRIMARY KEY AUTO_INCREMENT, whatsapp_phone VARCHAR(15), whatsapp_number VARCHAR(255), whatsapp_link VARCHAR(255), dash_message TEXT)`;
 // db.execute(sql, (err, result) => {
 //   if (err) throw err;
 //   console.log('admin setting table created')
@@ -1250,14 +1291,15 @@ app.get("/users", (req, res) => {
 //   console.log('admindTranaction table created successfully');
 // });
 
-// db.execute(`DROP TABLE dataTransactionHist`, (err, result) => {
+// db.execute(`ALTER TABLE admin_setting ADD whatsapp_number VARCHAR(255)`, (err, result) => {
 //   if (err) throw err;
 //   console.log('Datble deleted')
 // });
 
 // Update setting details
-app.put("/api/updated=setting=details", async (req, res) => {
-  const { whatsapp_phone, whatsapp_link, dash_message } = req.body;
+app.put("/api/updated/setting/details", async (req, res) => {
+  const { whatsapp_phone, whatsapp_number, whatsapp_link, dash_message } = req.body;
+  console.log(whatsapp_number);
   db.query(`SELECT d_id FROM admin_setting`, (err, result) => {
     if (err) {
       console.log("Error fetching admin details", err);
@@ -1267,8 +1309,8 @@ app.put("/api/updated=setting=details", async (req, res) => {
     if (result.length > 0) {
       const userId = result[0].d_id;
       db.execute(
-        `UPDATE admin_setting SET whatsapp_phone = ?, whatsapp_link = ?, dash_message = ? WHERE d_id = ?`,
-        [whatsapp_phone, whatsapp_link, dash_message, userId],
+        `UPDATE admin_setting SET whatsapp_phone = ?, whatsapp_number = ?, whatsapp_link = ?, dash_message = ? WHERE d_id = ?`,
+        [whatsapp_phone, whatsapp_number, whatsapp_link, dash_message, userId],
         (err, result) => {
           if (err) {
             console.log("Error updating admin details", err);
@@ -1281,8 +1323,8 @@ app.put("/api/updated=setting=details", async (req, res) => {
       );
     } else {
       db.execute(
-        `INSERT INTO admin_setting(whatsapp_phone, whatsapp_link, dash_message) VALUES(?, ?, ?)`,
-        [whatsapp_phone, whatsapp_link, dash_message],
+        `INSERT INTO admin_setting(whatsapp_phone, whatsapp_number, whatsapp_link, dash_message) VALUES(?, ?, ?)`,
+        [whatsapp_phone, whatsapp_number, whatsapp_link, dash_message],
         (err, result) => {
           if (err) {
             console.log("Error inseting admin details", err);
@@ -1300,7 +1342,7 @@ app.put("/api/updated=setting=details", async (req, res) => {
 //setting details
 app.get("/api/admin-details", (req, res) => {
   db.execute(
-    `SELECT whatsapp_phone, whatsapp_link, dash_message FROM admin_setting`,
+    `SELECT whatsapp_phone, whatsapp_number, whatsapp_link, dash_message FROM admin_setting`,
     (err, result) => {
       if (err) {
         console.log("Error selecting admin details", err);
