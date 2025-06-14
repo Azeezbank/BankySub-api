@@ -1079,18 +1079,13 @@ app.get("/api/user_info/:id", authenticateToken, (req, res) => {
 //updated user details
 app.put("/api/update/user/:id", authenticateToken, (req, res) => {
   const id = req.params.id;
-  console.log("This is the id", id);
   const { fieldName, value } = req.body;
-  console.log("This is the field name", fieldName, 'value', value);
 
   // ✅ Validate allowed fields to prevent SQL injection
   const allowedFields = ['username', 'user_email', 'user_balance', 'packages', 'Phone_number', 'Pin', 'fullName'];
   if (!allowedFields.includes(fieldName)) {
     return res.status(400).json({ message: "Invalid field name" });
   }
-
-  // ✅ Convert undefined to null
-  // const safeValue = value === undefined ? null : value;
 
   // ✅ Build dynamic field update safely
   const sql = `UPDATE users SET ${fieldName} = ? WHERE d_id = ?`;
@@ -1209,15 +1204,23 @@ app.post("/monnify/webhook", async (req, res) => {
 
 //Fund user manually
 app.post("/api/fund/user", authenticateToken, (req, res) => {
-  const amount = req.body.amount;
+  const { amount } = req.body;
   const id = req.user.id;
   const event_type = "Manual Fund";
   const payment_ref = 'Admin Approved';
   const payment_method = "Manual";
   const payment_status = 'Approved';
-  const paid_on = new Date().toISOString().slice(0, 19).replace("T", " "); 
-  
+  const paid_on = new Date().toISOString().replace('T', ' ').split('.')[0];
 
+  if (!amount || isNaN(amount)) {
+    console.log("Froud Funding");
+    return res.status(400).json({ message: "Invalid amount" });
+  }
+  if (amount > 10000) {
+    console.log("Funding amount exceeds limit");
+    return res.status(400).json({ message: "Funding amount exceeds limit" });
+  }
+  // Select user balance
   db.query(`SELECT user_balance FROM users WHERE d_id = ?`, [id], (err, result) => {
     if (err || result.length === 0) {
       console.error("Error selecting user balance", err.message);
@@ -1234,7 +1237,16 @@ db.execute(sql, [id, event_type, payment_ref, paid_on, amount, payment_method, p
     console.error('Failed to insert funding record', err.message);
     return res.status(500).json({message: 'Failed to insert funding recorf'});
   }
+
+  // Update user balance
+  const sql2 = `UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`;
+  db.execute(sql2, [newBalance, walletBalance, id], (err, result) => {
+    if (err) {
+      console.error('Failed to update user balance', err.message);
+      return res.status(500).json({message: 'Failed to update user balance'});
+    }
   res.status(200).json({message: 'Wallet Funded Manually successfully'});
+  });
 })
 });
 });
