@@ -1066,17 +1066,27 @@ app.get("/api/user_info", authenticateToken, (req, res) => {
 //Select user details by id
 app.get("/api/user_info/:id", authenticateToken, (req, res) => {
   const id = req.params.id;
-  console.log('my id', id);
     const sql = `SELECT d_id, username, user_email, user_balance, packages, Phone_number, Pin, fullName FROM users WHERE d_id = ?`;
     db.query(sql, [id], (err, result) => {
       if (err) {
         console.error('Failed to select user details', err.message);
         return res.status(500).json({message: 'Failed to select user details'});
       }
-      console.log('result', result);
-      console.log('result 0', result[0]);
       res.status(200).json(result[0])
     });
+});
+
+// //updated user details
+app.put("/api/update/user/:id", authenticateToken, (req, res) => {
+  const { id } = req.params.id;
+  const { fieldName } = req.body;
+  db.execute(`UPDATE users SET ${fieldName} = ? WHERE d_id = ?`, [req.body.value, id], (err, result) => {
+    if (err) {
+      console.error("Failed to update user details", err.message);
+      return res.status(500).json({ message: "Failed to update user details" });
+    }
+    res.status(200).json({ message: "User details updated successfully" });
+})
 });
 
 //Payment transaction table
