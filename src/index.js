@@ -1259,7 +1259,7 @@ app.get("/payment-history", (req, res) => {
   const offset = (page - 1) * limit;
 
   const countQuery = "SELECT COUNT(*) AS total FROM paymentHist";
-  const dataQuery = "SELECT * FROM paymentHist LIMIT ? OFFSET ?";
+  const dataQuery = "SELECT * FROM paymentHist ORDER BY paid_on DESC LIMIT ? OFFSET ?";
 
   db.query(countQuery, (err, countResult) => {
     if (err) return res.status(500).json({ message: "Server Error" });
