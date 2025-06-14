@@ -1065,7 +1065,7 @@ app.get("/api/user_info", authenticateToken, (req, res) => {
 
 //Select user details by id
 app.get("/api/user_info/:id", authenticateToken, (req, res) => {
-  const id = req.params;
+  const id = req.params.id;
     const sql = `SELECT d_id, username, user_email, user_balance, packages, Phone_number, Pin, fullName FROM users WHERE d_id = ?`;
     db.query(sql, [id], (err, result) => {
       if (err) {
