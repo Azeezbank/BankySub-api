@@ -1203,9 +1203,9 @@ app.post("/monnify/webhook", async (req, res) => {
 });
 
 //Fund user manually
-app.post("/api/fund/user", authenticateToken, (req, res) => {
+app.post("/api/fund/user/:id", authenticateToken, (req, res) => {
   const { amount } = req.body;
-  const id = req.user.id;
+  const id = req.params.id;
   const event_type = "Manual Fund";
   const payment_ref = 'Admin Approved';
   const payment_method = "Manual";
