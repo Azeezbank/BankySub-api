@@ -1076,21 +1076,32 @@ app.get("/api/user_info/:id", authenticateToken, (req, res) => {
     });
 });
 
-// //updated user details
+//updated user details
 app.put("/api/update/user/:id", authenticateToken, (req, res) => {
-  const { id } = req.params.id;
-  const { fieldName } = req.body;
-  console.log(id);
-  console.log('field name', fieldName);
-  console.log('req body', req.body);
-  console.log('Request value', req.body.value);
-  db.execute(`UPDATE users SET ${fieldName} = ? WHERE d_id = ?`, [req.body.value, id], (err, result) => {
+  const id = req.params.id;
+  console.log("This is the id", id);
+  const { fieldName, value } = req.body;
+  console.log("This is the field name", fieldName, 'value', value);
+
+  // ✅ Validate allowed fields to prevent SQL injection
+  const allowedFields = ['username', 'user_email', 'user_balance', 'packages', 'Phone_number', 'Pin', 'fullName'];
+  if (!allowedFields.includes(fieldName)) {
+    return res.status(400).json({ message: "Invalid field name" });
+  }
+
+  // ✅ Convert undefined to null
+  // const safeValue = value === undefined ? null : value;
+
+  // ✅ Build dynamic field update safely
+  const sql = `UPDATE users SET ${fieldName} = ? WHERE d_id = ?`;
+
+  db.execute(sql, [value, id], (err, result) => {
     if (err) {
       console.error("Failed to update user details", err.message);
       return res.status(500).json({ message: "Failed to update user details" });
     }
     res.status(200).json({ message: "User details updated successfully" });
-})
+  });
 });
 
 //Payment transaction table
