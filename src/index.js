@@ -1251,7 +1251,7 @@ app.get("/users", (req, res) => {
 
     db.query(sql, [offset, limit], (err, dataResult) => {
       if (err) {
-        console.log("Error selecting user details");
+        console.log("Error selecting user details", err.message);
         return res
           .status(500)
           .json({ message: "Error selecting user details" });
@@ -1299,7 +1299,6 @@ app.get("/users", (req, res) => {
 // Update setting details
 app.put("/api/updated/setting/details", async (req, res) => {
   const { whatsapp_phone, whatsapp_number, whatsapp_link, dash_message } = req.body;
-  console.log(whatsapp_number);
   db.query(`SELECT d_id FROM admin_setting`, (err, result) => {
     if (err) {
       console.log("Error fetching admin details", err);
