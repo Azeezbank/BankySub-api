@@ -1080,6 +1080,10 @@ app.get("/api/user_info/:id", authenticateToken, (req, res) => {
 app.put("/api/update/user/:id", authenticateToken, (req, res) => {
   const { id } = req.params.id;
   const { fieldName } = req.body;
+  console.log(id);
+  console.log('field name', fieldName);
+  console.log('req body', req.body);
+  console.log('Request value', req.body.value);
   db.execute(`UPDATE users SET ${fieldName} = ? WHERE d_id = ?`, [req.body.value, id], (err, result) => {
     if (err) {
       console.error("Failed to update user details", err.message);
