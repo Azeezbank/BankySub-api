@@ -1244,7 +1244,7 @@ app.get("/users", (req, res) => {
   const offset = (page - 1) * limit;
 
   const countQuery = "SELECT COUNT(*) AS total FROM users";
-  const sql = `SELECT d_id, id, username, user_email, user_balance, packages, Phone_number, Pin FROM users LIMIT ?, ?`;
+  const sql = `SELECT d_id, username, user_email, user_balance, packages, Phone_number, Pin FROM users LIMIT ?, ?`;
   db.query(countQuery, (err, countResult) => {
     if (err) return res.status(500).json({ message: "Server Error" });
     const total = countResult[0].total;
