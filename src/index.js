@@ -737,7 +737,7 @@ app.get("/api/data/history", authenticateToken, (req, res) => {
 // });
 
 //Insert into Airtime network table
-// db.query(`INSERT INTO AirtimeN(name, id) VALUES('GLO', 2)`, (err, result) => {
+// db.query(`INSERT INTO AirtimeN(name, id) VALUES('MTN', 1), ('GLO', 2), ('AIRTEL', 4)`, (err, result) => {
 //   if (err) throw err;
 //   console.log('Inserted');
 // });
@@ -1029,6 +1029,19 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
+//Paystack dedicated account
+// const dedicated = async () => {
+//   const response = await axios.post('https://api.paystack.co/dedicated_account', {customer: '1234', preferred_bank: 'wema-bank'}, { headers: {
+//     Authorization: 'Bearer sk_live_9805c372302c1a2f2eb2f155ba427439872fbdc5',
+//     'Content-Type': 'application/json' 
+//   }
+//   });
+//   console.log('details', response.data)
+// };
+
+// dedicated();
+
 
 //Select user bank details
 app.post("/api/user_account", authenticateToken, (req, res) => {
