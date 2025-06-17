@@ -137,12 +137,12 @@ app.post("/register", async (req, res) => {
             }
 
             // Send email
-                await transporter.sendMail({
-                  from: process.env.EMAIL_USER,
-                  to: email,
-                  subject: "Verify your email",
-                  html: `<p>Your verification code is <b>${verificationCode}</b></p>`,
-                });
+            await transporter.sendMail({
+              from: process.env.EMAIL_USER,
+              to: email,
+              subject: "Verify your email",
+              html: `<p>Your verification code is <b>${verificationCode}</b></p>`,
+            });
 
             return res
               .status(200)
@@ -164,17 +164,17 @@ app.post('/verify/mail', (req, res) => {
   db.query(sql, [otp], (err, result) => {
     if (err || result.length === 0 || result[0].verificationOTP !== otp) {
       console.error('Invalid Verification Code', err.message);
-      return res.status(404).json({message: 'Invalid Verification Code, Please input valid verification code'});
+      return res.status(404).json({ message: 'Invalid Verification Code, Please input valid verification code' });
     }
-    
+
     const code = result[0].verificationOTP;
     const sql2 = `UPDATE users SET isverified = 'true' WHERE verificationOTP = ?`;
     db.execute(sql2, [code], (err, updateUser) => {
       if (err) {
         console.error('Failed to verify user', err.message);
-        return res.status(500).json({message: 'Failed to verify user'});
+        return res.status(500).json({ message: 'Failed to verify user' });
       }
-      res.status(200).json({message: 'User Verified Successfully'});
+      res.status(200).json({ message: 'User Verified Successfully' });
     });
   });
 });
@@ -192,28 +192,28 @@ app.post("/login", (req, res) => {
         return res.status(404).json({ message: "User not found" });
       }
       const user = results[0];
-      
+
       if (user.isverified === 'false') {
         console.log('User mail not verified, please verify your mail', err);
         const email = results[0].user_email;
         const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        
+
         // Send email
-                transporter.sendMail({
-                  from: process.env.EMAIL_USER,
-                  to: email,
-                  subject: "Verify your email",
-                  html: `<p>Your verification code is <b>${verificationCode}</b></p>`,
-                });
+        transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: email,
+          subject: "Verify your email",
+          html: `<p>Your verification code is <b>${verificationCode}</b></p>`,
+        });
 
         const sql = `UPDATE users SET verificationOTP = ? WHERE username = ?`;
         db.execute(sql, [verificationCode, username], (err, updatedCode) => {
           if (err) {
             console.error('Failed to Update user verification code', err.message);
-            return res.status(500).json({message: 'Failed to Update user verification code'});
+            return res.status(500).json({ message: 'Failed to Update user verification code' });
           }
-        
-        return res.status(503).json({message: 'User mail not verified, please verify your mail. An OTP has been sent to your mail.'})
+
+          return res.status(503).json({ message: 'User mail not verified, please verify your mail. An OTP has been sent to your mail.' })
         });
         return;
       }
@@ -259,6 +259,25 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+//Check if a user is admin
+const isAdmin = (req, res, next) => {
+  const userId = req.user.id;
+  const sql = `SELECT role FROM users WHERE d_id = ?`
+  db.query(sql, [userId], (err, result) => {
+    if (err || result.length === 0) {
+      console.log('Failed to select user', err.message);
+      return res.status(400).json({message: 'Failed to select user'});
+    }
+
+    if (result[0].role !== 'admin') {
+      console.log('Access denied, Admin Only', err.message);
+      return res.status(403).json({message: 'Access denied, Admin Only'});
+    }
+
+    next();
+  });
+};
+
 //Fetch data network
 app.get("/network", authenticateToken, (req, res) => {
   const sql = `SELECT * FROM networks WHERE is_active = 'active'`;
@@ -274,6 +293,11 @@ app.get("/network", authenticateToken, (req, res) => {
 //Protected route
 app.get("/protected", authenticateToken, (req, res) => {
   res.status(200).json({ message: "Authorized" });
+});
+
+//Protected Route for admin
+app.get('/api/admin/route', authenticateToken, isAdmin, (req, res) => {
+  res.status(200).json({message: 'Admin Authorized'});
 });
 
 //Fetch data plan type
@@ -564,7 +588,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                   }
                 } else if (choosenDataType === 'DATA COUPON') {
                   headers = {
-                     Authorization: process.env.DATA_COUPON_API_TOKEN,
+                    Authorization: process.env.DATA_COUPON_API_TOKEN,
                     "Content-Type": "application/json",
                   }
                 } else {
@@ -1079,14 +1103,14 @@ app.get("/api/user_info", authenticateToken, (req, res) => {
 //Select user details by id
 app.get("/api/user_info/:id", authenticateToken, (req, res) => {
   const id = req.params.id;
-    const sql = `SELECT d_id, username, user_email, user_balance, packages, Phone_number, Pin, fullName FROM users WHERE d_id = ?`;
-    db.query(sql, [id], (err, result) => {
-      if (err) {
-        console.error('Failed to select user details', err.message);
-        return res.status(500).json({message: 'Failed to select user details'});
-      }
-      res.status(200).json(result[0])
-    });
+  const sql = `SELECT d_id, username, user_email, user_balance, packages, Phone_number, Pin, fullName FROM users WHERE d_id = ?`;
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error('Failed to select user details', err.message);
+      return res.status(500).json({ message: 'Failed to select user details' });
+    }
+    res.status(200).json(result[0])
+  });
 });
 
 //updated user details
@@ -1244,24 +1268,24 @@ app.post("/api/fund/user/:id", authenticateToken, (req, res) => {
 
     const newBalance = walletBalance + amount;
 
-const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, prev_balance, user_balance) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-db.execute(sql, [id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, walletBalance, newBalance], (err, results) => {
-  if (err) {
-    console.error('Failed to insert funding record', err.message);
-    return res.status(500).json({message: 'Failed to insert funding recorf'});
-  }
+    const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, prev_balance, user_balance) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    db.execute(sql, [id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, walletBalance, newBalance], (err, results) => {
+      if (err) {
+        console.error('Failed to insert funding record', err.message);
+        return res.status(500).json({ message: 'Failed to insert funding recorf' });
+      }
 
-  // Update user balance
-  const sql2 = `UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`;
-  db.execute(sql2, [newBalance, walletBalance, id], (err, result) => {
-    if (err) {
-      console.error('Failed to update user balance', err.message);
-      return res.status(500).json({message: 'Failed to update user balance'});
-    }
-  res.status(200).json({message: 'Wallet Funded Manually successfully'});
+      // Update user balance
+      const sql2 = `UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`;
+      db.execute(sql2, [newBalance, walletBalance, id], (err, result) => {
+        if (err) {
+          console.error('Failed to update user balance', err.message);
+          return res.status(500).json({ message: 'Failed to update user balance' });
+        }
+        res.status(200).json({ message: 'Wallet Funded Manually successfully' });
+      });
+    })
   });
-})
-});
 });
 
 
@@ -1329,7 +1353,7 @@ app.get("/users", (req, res) => {
 //     console.log("Table datahist created");
 //   }
 // );
- 
+
 //setting details table
 // const sql = `CREATE TABLE IF NOT EXISTS admin_setting(d_id INT PRIMARY KEY AUTO_INCREMENT, whatsapp_phone VARCHAR(15), whatsapp_number VARCHAR(255), whatsapp_link VARCHAR(255), dash_message TEXT)`;
 // db.execute(sql, (err, result) => {
@@ -1458,14 +1482,12 @@ app.post("/verify/account", authenticateToken, (req, res) => {
     return res.status(404).json({ message: "Invalid verification type" });
   }
 
-  console.log("User id", userid);
   const sql = `UPDATE users SET ${type} = ? WHERE d_id = ?`;
   db.execute(sql, [verificationNumber, userid], (err, result) => {
     if (err) {
       console.error(err.message);
       return res.status(500).json({ message: "Failed to verify user account" });
     }
-    console.log("Success");
     res.status(200).json({ message: "User Account Verified" });
   });
 });
