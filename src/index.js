@@ -794,12 +794,12 @@ app.get("/api/airtimeT", authenticateToken, (req, res) => {
 
 //Fetch Airtime from API
 app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
-  const { airtimeNChoosen, airtimeTChoosen, mobileN, amount } = req.body;
+  const { airtimeNChoosen, airtimeTChoosen, mobileN, amount, actualAmount } = req.body;
   const userid = req.user.id;
 
   const airtimeBody = {
     network: airtimeNChoosen,
-    amount: amount,
+    amount: actualAmount,
     mobile_number: mobileN,
     Ported_number: true,
     airtime_type: airtimeTChoosen,
