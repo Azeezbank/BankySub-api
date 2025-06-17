@@ -750,7 +750,7 @@ app.get("/api/data/history", authenticateToken, (req, res) => {
 // });
 
 //Create Airtime history table
-// db.execute(`CREATE TABLE IF NOT EXISTS airtimeHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, network VARCHAR(15), airtimeType VARCHAR(20), amount VARCHAR(15), phone_number VARCHAR(20), previous_balance VARCHAR(15), new_balance VARCHAR(15), time DATETIME, status VARCHAR(15))`, (err, res) => {
+// db.execute(`CREATE TABLE IF NOT EXISTS airtimeHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, network VARCHAR(15), amount VARCHAR(15), phone_number VARCHAR(20), previous_balance VARCHAR(15), new_balance VARCHAR(15), time DATETIME, status VARCHAR(15)), airtimeType VARCHAR(20)`, (err, res) => {
 //   if (err) throw err;
 //   console.log('airtime record table created')
 // });
@@ -809,7 +809,6 @@ app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
     Authorization: process.env.AIRTIME_API_TOKEN,
     "Content-Type": "application/json",
   };
-  console.log(process.env.AIRTIME_API_URL);
   try {
     const response = await axios.post(
       process.env.AIRTIME_API_URL,
@@ -878,12 +877,13 @@ app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
                 const status =
                   response.data.Status;
 
-                const hist = `INSERT INTO airtimeHist(id, network, amount, phone_number, previous_balance, new_balance, status, airtimeType, time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
+                const hist = `INSERT INTO airtimeHist(id, network, amount, phone_number, previous_balance, new_balance, time, status, airtimeType) VALUES(?, ?, ?, ?, ?, ?, NOW(), ?, ?)`;
                 db.execute(
                   hist,
                   [
                     userid,
                     airtimeNChoosen,
+                    amount,
                     mobileN,
                     wallet,
                     newBalance,
