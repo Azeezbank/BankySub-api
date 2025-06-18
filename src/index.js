@@ -85,7 +85,7 @@ const db = mysql.createPool({
 //   console.log("yes created")
 // });
 
-// const sql = `ALTER TABLE users DROP COLUMN id`;
+// const sql = `ALTER TABLE users ADD isban ENUM('true', 'false') DEFAULT 'false'`;
 //  db.execute(sql, (err, result) => {
 //    if (err) throw err;
 //    console.log('AdedeEEE');
@@ -168,12 +168,23 @@ app.post('/verify/mail', (req, res) => {
     }
 
     const code = result[0].verificationOTP;
+    const username = result[0].username;
+
     const sql2 = `UPDATE users SET isverified = 'true' WHERE verificationOTP = ?`;
-    db.execute(sql2, [code], (err, updateUser) => {
+    db.execute(sql2, [code], async (err, updateUser) => {
       if (err) {
         console.error('Failed to verify user', err.message);
         return res.status(500).json({ message: 'Failed to verify user' });
       }
+
+      // Send email
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: 'tunstelecom.com.ng@gmail.com',
+        subject: "New User Registered",
+        html: `<p>New User with Username <b>${username}</b> has just registered on your website </p>`,
+      });
+
       res.status(200).json({ message: 'User Verified Successfully' });
     });
   });
@@ -254,6 +265,7 @@ const authenticateToken = (req, res, next) => {
     if (err) {
       return res.status(403).json({ message: "invalid token" });
     }
+
     req.user = user;
     next();
   });
@@ -266,12 +278,12 @@ const isAdmin = (req, res, next) => {
   db.query(sql, [userId], (err, result) => {
     if (err || result.length === 0) {
       console.log('Failed to select user', err.message);
-      return res.status(400).json({message: 'Failed to select user'});
+      return res.status(400).json({ message: 'Failed to select user' });
     }
 
     if (result[0].role !== 'admin') {
       console.log('Access denied, Admin Only', err.message);
-      return res.status(403).json({message: 'Access denied, Admin Only'});
+      return res.status(403).json({ message: 'Access denied, Admin Only' });
     }
 
     next();
@@ -292,12 +304,21 @@ app.get("/network", authenticateToken, (req, res) => {
 
 //Protected route
 app.get("/protected", authenticateToken, (req, res) => {
-  res.status(200).json({ message: "Authorized" });
+  const userId = req.user.id;
+  const sql = `SELECT isban FROM users WHERE d_id = ?`;
+  db.query(sql, [userId], (err, result) => {
+    if (err || result[0].isban === 'true') {
+      console.log('Unauthorized, Banned User', err.message);
+      return res.status(401).json({ message: 'UB' });
+    }
+
+    res.status(200).json({ message: "Authorized" });
+  });
 });
 
 //Protected Route for admin
 app.get('/api/admin/route', authenticateToken, isAdmin, (req, res) => {
-  res.status(200).json({message: 'Admin Authorized'});
+  res.status(200).json({ message: 'Admin Authorized' });
 });
 
 //Fetch data plan type
@@ -859,6 +880,31 @@ app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
             .json({ message: "Insufficient wallet balance" });
         }
         const newBalance = wallet - amount;
+        const userId = req.user.id;
+
+        if (amount > 3000) {
+          console.log("Froud Alert, Amount > 3k");
+          // Alert Admin of the transaction
+          transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: 'tunstelecom.com.ng@gmail.com',
+            subject: "Froud Alert!",
+            html: `<p>A User with <b>ID: ${userId} </b>, is trying to purchase Airtime more than 3k </p>`
+          });
+
+          const isban = 'true';
+          const ban = `UPDATE users SET isban = ? WHERE d_id = ?`;
+          db.execute(ban, [isban, userId], (err, result) => {
+            if (err) {
+              console.error(`Faild to ban User with ID: ${userId}`, err.message);
+              return res.status(503).json({message: 'Forbidden'});
+            } else {
+              console.log(`User ID: ${userId} Banned`)
+              return res.status(403).json({message: 'Transaction cannot be processed'});
+            }
+          });
+        }
+
         db.execute(
           `UPDATE users SET user_balance = ? WHERE d_id = ?`,
           [newBalance, userid],
@@ -1135,6 +1181,19 @@ app.put("/api/update/user/:id", authenticateToken, (req, res) => {
     res.status(200).json({ message: "User details updated successfully" });
   });
 });
+
+//Ban user
+app.put("/api/ban/user/:id", authenticateToken, (req, res) => {
+  const id = req.params.id;
+  const ban = 'true';
+  const sql = `UPDATE users SET isban = ? WHERE d_id = ?`;
+  db.execute(sql, [ban, id], (err, result) => {
+    if (err) {
+      console.error('Failed to Ban user', err.message);
+      return res.status(500).json({ message: 'Failed to Ban user' });
+    }
+  })
+})
 
 //Payment transaction table
 // const sql2 = `CREATE TABLE IF NOT EXISTS paymentHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, event_type VARCHAR(100), payment_ref VARCHAR(255), paid_on DATETIME, amount INT, payment_method VARCHAR(255), payment_status VARCHAR(50), prev_balance INT, user_balance INT)`;
