@@ -1027,7 +1027,7 @@ const authenticate = async () => {
   return response.data.responseBody.accessToken;
 };
 
-// db.execute(`DELETE FROM userBankDetails1`, (err, result) => {
+// db.execute(`ALTER TABLE userBankDetails1 DROP name`, (err, result) => {
 //   if (err) throw err;
 //   console.log('deleted')
 // })
@@ -1051,8 +1051,6 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
 
       const userDetail = userDetails[0];
 
-      console.log(userDetail.nin);
-      
       if (userDetail.nin.length < 11) {
         console.log('Invalid NI Number');
         return res.status(400).json({message: 'NIN cannot be empty, submit your NIN'});
@@ -1082,10 +1080,11 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
       const acctName = response.data.responseBody.accountName;
       const bankName = response.data.responseBody.bankName;
       const refrence = response.data.responseBody.accountReference;
-      const sql = `INSERT INTO userBankDetails1 (id, acct_id, acctNo, acctName, bankName) VALUES (?, ?, ?, ?)`;
+      
+      const sql = `INSERT INTO userBankDetails1 (id, acctNo, acctName, bankName, acct_id) VALUES (?, ?, ?, ?, ?)`;
       db.query(
         sql,
-        [userid, refrence, acctNo, acctName, bankName],
+        [userid, acctNo, acctName, bankName, refrence,],
         (err, result) => {
           if (err) {
             console.log("Error inserting bank details", err);
