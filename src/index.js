@@ -1042,17 +1042,14 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
 
     const userD = `SELECT username, user_email, nin FROM users WHERE d_id = ?`;
     db.query(userD, [userid], async (err, userDetails) => {
-      if (err) {
-        console.log(err.message);
+      if (err || userDetails.length === 0) {
+        console.log("Unable to select user details", err.message);
         return res
           .status(500)
           .json({ message: "Unable to select user details" });
       }
-      const userDetail = userDetails[0];
 
-      if (userDetails.length === 0) {
-        return res.status(404).json({ message: " User Not Found" });
-      }
+      const userDetail = userDetails[0];
 
       const response = await axios.post(
         `${MON_BASE_URL}/api/v1/bank-transfer/reserved-accounts`,
@@ -1084,7 +1081,7 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
         [userid, refrence, acctNo, acctName, bankName],
         (err, result) => {
           if (err) {
-            console.log("Error inserting bank details");
+            console.log("Error inserting bank details", err);
             return res
               .status(500)
               .json({ message: "Error inserting bank details" });
