@@ -47,7 +47,7 @@ const db = mysql.createPool({
 
 //Create table users
 // db.execute(
-//   `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, username VARCHAR(20), user_pass VARCHAR(255), user_email VARCHAR(100), user_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP, prev_balance INT, user_balance INT, packages ENUM('USER', 'RESELLER', 'API') DEFAULT 'USER', Phone_number VARCHAR(15), Pin INT, role ENUM('admin', 'user') DEFAULT 'user')`,
+//   `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, username VARCHAR(20), user_pass VARCHAR(255), user_email VARCHAR(100), user_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP, prev_balance INT, user_balance INT, packages ENUM('USER', 'RESELLER', 'API') DEFAULT 'USER', Phone_number VARCHAR(15), Pin INT, role ENUM('admin', 'user') DEFAULT 'user', nin VARCHAR(11), verificationOTP VARCHAR(6), isverified ENUM('true', 'false') DEFAULT 'false', fullName VARCHAR(255), isban ENUM('true', 'false') DEFAULT 'false')`,
 //   (err, result) => {
 //     if (err) throw err;
 //     console.log("Table networks created");
@@ -85,7 +85,7 @@ const db = mysql.createPool({
 //   console.log("yes created")
 // });
 
-// const sql = `ALTER TABLE users ADD isban ENUM('true', 'false') DEFAULT 'false'`;
+// const sql = `ALTER TABLE users MODIFY nin VARCHAR(11)`;
 //  db.execute(sql, (err, result) => {
 //    if (err) throw err;
 //    console.log('AdedeEEE');
@@ -1051,7 +1051,9 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
 
       const userDetail = userDetails[0];
 
-      if (userDetail.nin === 0 || userDetail.nin.length > 11 || userDetail.nin.length < 0) {
+      console.log(userDetail.nin);
+      
+      if (userDetail.nin.length < 11) {
         console.log('Invalid NI Number');
         return res.status(400).json({message: 'NIN cannot be empty, submit your NIN'});
       }
