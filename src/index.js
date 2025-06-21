@@ -1051,8 +1051,8 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
 
       const userDetail = userDetails[0];
 
-      if (userDetail.nin === null) {
-        console.log('Empty NIN');
+      if (userDetail.nin === 0 || userDetail.nin.length > 11 || userDetail.nin.length < 0) {
+        console.log('Invalid NI Number');
         return res.status(400).json({message: 'NIN cannot be empty, submit your NIN'});
       }
 
@@ -1530,18 +1530,16 @@ app.post("/verify/account", authenticateToken, (req, res) => {
   const { verificationType, verificationNumber } = req.body;
   const userid = req.user.id;
 
+  const allowedTypes = ["NIN", "BVN"];
+if (!allowedTypes.includes(verificationType)) {
+  return res.status(400).json({ message: "Invalid verification type" });
+}
+
   if (verificationNumber.length !== 11)
     return res.status(400).json({ message: "Invalid NIN" });
 
-  let type = "";
-  if (verificationType == "NIN") {
-    type = "nin";
-  } else if (verificationType === "BVN") {
-    type = "bvn";
-  } else {
-    console.log("Invalid verification type");
-    return res.status(404).json({ message: "Invalid verification type" });
-  }
+  let type = verificationType.toLowerCase();
+
 
   const sql = `UPDATE users SET ${type} = ? WHERE d_id = ?`;
   db.execute(sql, [verificationNumber, userid], (err, result) => {
