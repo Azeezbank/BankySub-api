@@ -1051,6 +1051,11 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
 
       const userDetail = userDetails[0];
 
+      if (userDetail.nin === null) {
+        console.log('Empty NIN');
+        return res.status(400).json({message: 'NIN cannot be empty, submit your NIN'});
+      }
+
       const response = await axios.post(
         `${MON_BASE_URL}/api/v1/bank-transfer/reserved-accounts`,
         {
@@ -1059,7 +1064,7 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
           currencyCode: "NGN",
           contractCode: MON_CONTRACT_CODE,
           customerEmail: userDetail.user_email,
-          nin: userDetails[0].nin,
+          nin: userDetail.nin,
           customerName: userDetail.username,
           getAllAvailableBanks: true,
         },
