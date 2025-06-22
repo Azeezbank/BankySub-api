@@ -903,6 +903,7 @@ app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
               return res.status(403).json({message: 'Transaction cannot be processed'});
             }
           });
+          return;
         }
 
         db.execute(
@@ -1075,7 +1076,7 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
           },
         }
       );
-      console.log(response.data.responseBody);
+      
       const acctNo = response.data.responseBody.accountNumber;
       const acctName = response.data.responseBody.accountName;
       const bankName = response.data.responseBody.bankName;
@@ -1103,9 +1104,9 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
   }
 });
 
-//Paystack dedicated account
+// Paystack dedicated account
 // const dedicated = async () => {
-//   const response = await axios.post('https://api.paystack.co/dedicated_account', {customer: '1234', preferred_bank: 'wema-bank'}, { headers: {
+//   const response = await axios.get('https://api.paystack.co/dedicated_account/available_providers', { headers: {
 //     Authorization: 'Bearer sk_live_9805c372302c1a2f2eb2f155ba427439872fbdc5',
 //     'Content-Type': 'application/json' 
 //   }
