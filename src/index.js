@@ -660,6 +660,8 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                           .json({ message: "Insufficient wallet balance" });
                       }
                       const newBalance = wallet - DataPrice;
+
+                      //Deduct user
                       db.execute(
                         `UPDATE users SET user_balance = ? WHERE d_id = ?`,
                         [newBalance, userId],
@@ -684,7 +686,8 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                                 });
                               }
 
-                              if (response.data.status === "failed") {
+                              if (response.data.status === "failed" || response.data.status === "Failed" || 
+                                response.data.status === "Fail" || response.status >= 400) {
                                 db.execute(
                                   `UPDATE users SET user_balance = ? WHERE d_id = ?`,
                                   [wallet, userId],
@@ -700,19 +703,12 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                                     console.log("User refunded");
                                   }
                                 );
-                              } else {
-                                console.log("Transaction successful");
+                                return;
                               }
 
                               const status =
                                 response.data.status;
-                              console.log('Check null', userId,
-                                  plan,
-                                  mobileNumber,
-                                  DataPrice,
-                                  wallet,
-                                  newBalance,
-                                  status);
+
                               const dataHist = `INSERT INTO dataTransactionHist(id, plan, phone_number, amount, balance_before, balance_after, status, time) VALUES(?, ?, ?, ?, ?, ?, ?, NOW())`;
                               db.execute(
                                 dataHist,
