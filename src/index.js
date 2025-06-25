@@ -580,6 +580,14 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                   Ported_number: true,
                 };
 
+                //for ncwallet api
+                const requestBodyNC = {
+                  network: networkId,
+                  mobile_number: mobileNumber,
+                  plan: id,
+                  bypass: true,
+                };
+
                 let headers = {};
 
                 if (choosenDataType === "SME") {
@@ -636,9 +644,14 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                     return;
                   }
 
-                  const response = await axios.post(apiUrl, requestBody, {
+                  let response;
+                  if (choosenDataType === 'DATA SHARE') {
+                    response = await axios.post(apiUrl, requestBodyNC, { headers })
+                  } else {
+                  response = await axios.post(apiUrl, requestBody, {
                     headers,
                   });
+                }
 
                   //Deduct payment
                   db.execute(
