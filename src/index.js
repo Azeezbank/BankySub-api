@@ -705,14 +705,14 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                               }
 
                               const status =
-                                response.data.Status;
+                                response.data.status;
                               console.log('Check null', userId,
                                   plan,
                                   mobileNumber,
                                   DataPrice,
                                   wallet,
                                   newBalance,
-                                  status,);
+                                  status);
                               const dataHist = `INSERT INTO dataTransactionHist(id, plan, phone_number, amount, balance_before, balance_after, status, time) VALUES(?, ?, ?, ?, ?, ?, ?, NOW())`;
                               db.execute(
                                 dataHist,
