@@ -706,7 +706,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
 
                               const status =
                                 response.data.Status;
-                              console.log('Check null, userId,
+                              console.log('Check null', userId,
                                   plan,
                                   mobileNumber,
                                   DataPrice,
