@@ -564,7 +564,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
               [choosenNetwork],
               async (err, results) => {
                 if (err) {
-                  console.error("Field to select network", err);
+                  console.log("Field to select network", err);
                   return res
                     .status(500)
                     .json({ message: "Field to select network" });
@@ -573,19 +573,31 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                 console.log("This is network id", networkId);
                 const id = result[0].id;
 
+                // modify network id for nc wallet using data share
+                let ncNetworkId = null;
+                if (networkId === 1) {
+                  ncNetworkId = 1
+                } else if (networkId === 4) {
+                  ncNetworkId = 2
+                } else if (networkId === 2) {
+                  ncNetworkId = 3
+                } else if (networkId === 3) {
+                  ncNetworkId = 4
+                }
+
+                //nc wallet body
+                const ncRequestBody = {
+                  network: ncNetworkId,
+                  mobile_number: mobileNumber,
+                  plan: id,
+                  bypass: true,
+                }
+
                 const requestBody = {
                   network: networkId,
                   mobile_number: mobileNumber,
                   plan: id,
                   Ported_number: true,
-                };
-
-                //for ncwallet api
-                const requestBodyNC = {
-                  network: networkId,
-                  mobile_number: mobileNumber,
-                  plan: id,
-                  bypass: true,
                 };
 
                 let headers = {};
@@ -644,10 +656,15 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                     return;
                   }
 
+                  //choose api call for ncwallet and msorg
                   let response;
+                  //nc wallet
                   if (choosenDataType === 'DATA SHARE') {
-                    response = await axios.post(apiUrl, requestBodyNC, { headers })
+                    response = await axios.post(apiUrl, ncRequestBody, {
+                    headers,
+                  });
                   } else {
+                    //msorg
                   response = await axios.post(apiUrl, requestBody, {
                     headers,
                   });
