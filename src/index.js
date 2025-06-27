@@ -588,8 +588,8 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                 //nc wallet body
                 const ncRequestBody = {
                   network: ncNetworkId,
-                  mobile_number: mobileNumber,
-                  plan: id,
+                  phone_number: mobileNumber,
+                  data_plan: id,
                   bypass: true,
                 }
 
