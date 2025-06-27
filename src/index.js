@@ -733,7 +733,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                                     console.log("User refunded");
                                   }
                                 );
-                                return;
+                                return res.status(500).json({message: 'Transaction Failed'});
                               }
 
                               const status =
