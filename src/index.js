@@ -710,14 +710,14 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                             [wallet, userId],
                             (err, result) => {
                               if (err) {
-                                console.error("Failed to set previoud balance");
+                                console.error("Failed to set previous balance");
                                 return res.status(500).json({
-                                  message: "Failed to set previoud balance",
+                                  message: "Failed to set previous balance",
                                 });
                               }
 
                               if (response.data.status === "failed" || response.data.status === "Failed" || 
-                                response.data.status === "Fail" || response.status >= 400) {
+                                response.data.status === "Fail" || response.data.status === "fail" || response.status >= 400) {
                                 db.execute(
                                   `UPDATE users SET user_balance = ? WHERE d_id = ?`,
                                   [wallet, userId],
