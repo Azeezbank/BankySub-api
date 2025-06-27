@@ -669,6 +669,8 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                     headers,
                   });
                 }
+                console.log('this is response', response);
+                console.log('nc body', ncRequestBody);
 
                   //Deduct payment
                   db.execute(
