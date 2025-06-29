@@ -431,7 +431,7 @@ app.get("/data/plan", async (req, res) => {
         }
         db.query(sql3, (err, mobile) => {
           if (err) {
-            console.log("Failed to select 9mobile data", err);
+            console.log("Failed to select 9mobile 'data", err);
             return res
               .status(500)
               .json({ error: "Failed to select 9mobile data" });
@@ -658,19 +658,19 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
 
                   //choose api call for ncwallet and msorg
                   let response;
+
                   //nc wallet
                   if (choosenDataType === 'DATA SHARE') {
                     response = await axios.post(apiUrl, ncRequestBody, {
-                    headers,
-                  });
+                      headers,
+                    });
                   } else {
+
                     //msorg
-                  response = await axios.post(apiUrl, requestBody, {
-                    headers,
-                  });
-                }
-                console.log('this is response', response);
-                console.log('nc body', ncRequestBody);
+                    response = await axios.post(apiUrl, requestBody, {
+                      headers,
+                    });
+                  }
 
                   //Deduct payment
                   db.execute(
@@ -718,7 +718,7 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                                 });
                               }
 
-                              if (response.data.status === "failed" || response.data.status === "Failed" || 
+                              if (response.data.status === "failed" || response.data.status === "Failed" ||
                                 response.data.status === "Fail" || response.data.status === "fail" || response.status >= 400) {
                                 db.execute(
                                   `UPDATE users SET user_balance = ? WHERE d_id = ?`,
@@ -735,11 +735,11 @@ app.post("/api/data/bundle", authenticateToken, async (req, res) => {
                                     console.log("User refunded");
                                   }
                                 );
-                                return res.status(500).json({message: 'Transaction Failed'});
+                                return res.status(500).json({ message: 'Transaction Failed' });
                               }
 
                               const status =
-                                response.data.status;
+                                response.data.Status ?? response.data.status;
 
                               const dataHist = `INSERT INTO dataTransactionHist(id, plan, phone_number, amount, balance_before, balance_after, status, time) VALUES(?, ?, ?, ?, ?, ?, ?, NOW())`;
                               db.execute(
@@ -932,10 +932,10 @@ app.post("/api/airtime/topup", authenticateToken, async (req, res) => {
           db.execute(ban, [isban, userId], (err, result) => {
             if (err) {
               console.error(`Faild to ban User with ID: ${userId}`, err.message);
-              return res.status(503).json({message: 'Forbidden'});
+              return res.status(503).json({ message: 'Forbidden' });
             } else {
               console.log(`User ID: ${userId} Banned`)
-              return res.status(403).json({message: 'Transaction cannot be processed'});
+              return res.status(403).json({ message: 'Transaction cannot be processed' });
             }
           });
           return;
@@ -1089,7 +1089,7 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
 
       if (userDetail.nin.length < 11) {
         console.log('Invalid NI Number');
-        return res.status(400).json({message: 'NIN cannot be empty, submit your NIN'});
+        return res.status(400).json({ message: 'NIN cannot be empty, submit your NIN' });
       }
 
       const response = await axios.post(
@@ -1111,12 +1111,12 @@ app.post("/dedicated/account", authenticateToken, async (req, res) => {
           },
         }
       );
-      
+
       const acctNo = response.data.responseBody.accountNumber;
       const acctName = response.data.responseBody.accountName;
       const bankName = response.data.responseBody.bankName;
       const refrence = response.data.responseBody.accountReference;
-      
+
       const sql = `INSERT INTO userBankDetails1 (id, acctNo, acctName, bankName, acct_id) VALUES (?, ?, ?, ?, ?)`;
       db.query(
         sql,
@@ -1568,9 +1568,9 @@ app.post("/verify/account", authenticateToken, (req, res) => {
   const userid = req.user.id;
 
   const allowedTypes = ["NIN", "BVN"];
-if (!allowedTypes.includes(verificationType)) {
-  return res.status(400).json({ message: "Invalid verification type" });
-}
+  if (!allowedTypes.includes(verificationType)) {
+    return res.status(400).json({ message: "Invalid verification type" });
+  }
 
   if (verificationNumber.length !== 11)
     return res.status(400).json({ message: "Invalid NIN" });
