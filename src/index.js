@@ -18,7 +18,6 @@ import transaction from './transaction/webhook.js';
 import signout from './logout/logout.js';
 import { authenticateToken } from './auth/middleware.js';
 import  env  from './adminPage/env.js';
-import { envTable } from './adminPage/env.js';
 
 const port = process.env.PORT || 3006;
 
@@ -42,7 +41,7 @@ app.use('/api/verification', authenticateToken, verification);
 app.use('/api/transaction', authenticateToken, transaction);
 app.use('/api/logout', authenticateToken, signout);
 app.use('/api/admin/env', env);
-envTable(); // Initialize the env table
+//envTable(); // Initialize the env table
 
 
 
