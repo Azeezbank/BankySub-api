@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const algorithm = 'aes-256-cbc';
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY; // Must be 32 bytes!
