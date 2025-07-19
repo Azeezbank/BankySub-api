@@ -1,6 +1,5 @@
 import express from 'express';
 import db from '../config/database.js';
-import { authenticateToken } from '../auth/middleware.js';
 import { encrypt } from '../uttilis/encrypt.js';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -24,7 +23,7 @@ const router = express.Router();
 
 
 //Update api docs
-router.post('/', authenticateToken, (req, res) => {
+router.post('/', (req, res) => {
     const { service_type, api_key, api_url } = req.body;
 
         const sql = `INSERT INTO env(service_type, api_key, api_url) VALUES (?, ?, ?)`;
@@ -40,7 +39,7 @@ router.post('/', authenticateToken, (req, res) => {
 });
 
 //Fetch API Docs
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', (req, res) => {
     const sql = `SELECT d_id, service_type, api_key, api_url FROM env`;
     db.query(sql, (err, result) => {
         if (err) {
