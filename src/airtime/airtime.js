@@ -82,14 +82,28 @@ router.post("/topup", async (req, res) => {
     Ported_number: true,
     airtime_type: airtimeTChoosen,
   };
-db.query(`SELECT api_key, api_url FROM env WHERE service_type = ?`, [airtime_type], async (err, api) => {
+
+  try {
+    db.query(`SELECT api_key, api_url FROM env WHERE service_type = ?`, [airtime_type], async (err, apiDoc) => {
+      if (err) {
+        console.error('Failed to select api details.', err.message);
+        return;
+      }
+
+      if (!apiDoc || apiDoc.length === 0) {
+      console.error("No API found for the given service type.");
+      return;
+    }
+
+      const { api_key, api_url } = apiDoc[0];
+
   const headers = {
-    Authorization: api[0].api_key,
+    Authorization: api_key,
     "Content-Type": "application/json",
   };
-  try {
+
     const response = await axios.post(
-      api[0].api_url,
+      api_url,
       airtimeBody,
       { headers }
     );
@@ -217,13 +231,13 @@ db.query(`SELECT api_key, api_url FROM env WHERE service_type = ?`, [airtime_typ
         );
       }
     );
+  });
   } catch (err) {
     console.error(err.response?.data || err.message);
     res
       .status(500)
       .json({ error: "Failed to fetch Airtime from external API" });
   }
-});
 });
 
 // Fetch airtime transaction histories
