@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from 'dotenv';
 import db from '../config/database.js';
 import axios from "axios";
+import { decrypt } from "../uttilis/encrypt.js";
 dotenv.config();
 const router = express.Router();
 
@@ -96,9 +97,10 @@ router.post("/topup", async (req, res) => {
     }
 
       const { api_key, api_url } = apiDoc[0];
+      const decryptToken = decrypt(api_key);
 
   const headers = {
-    Authorization: api_key,
+    Authorization: decryptToken,
     "Content-Type": "application/json",
   };
 
