@@ -84,7 +84,7 @@ router.post("/topup", async (req, res) => {
   };
 
   try {
-    db.query(`SELECT api_key, api_url FROM env WHERE service_type = ?`, [airtime_type], async (err, apiDoc) => {
+    db.query(`SELECT api_key, api_url FROM env WHERE service_type = ?`, [airtimeTChoosen], async (err, apiDoc) => {
       if (err) {
         console.error('Failed to select api details.', err.message);
         return;
