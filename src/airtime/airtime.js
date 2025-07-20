@@ -82,14 +82,14 @@ router.post("/topup", async (req, res) => {
     Ported_number: true,
     airtime_type: airtimeTChoosen,
   };
-
+db.query(`SELECT api_key, api_url FROM env WHERE service_type = ?`, [airtime_type], async (err, api) => {
   const headers = {
-    Authorization: process.env.AIRTIME_API_TOKEN,
+    Authorization: api[0].api_key,
     "Content-Type": "application/json",
   };
   try {
     const response = await axios.post(
-      process.env.AIRTIME_API_URL,
+      api[0].api_url,
       airtimeBody,
       { headers }
     );
@@ -223,6 +223,7 @@ router.post("/topup", async (req, res) => {
       .status(500)
       .json({ error: "Failed to fetch Airtime from external API" });
   }
+});
 });
 
 // Fetch airtime transaction histories
