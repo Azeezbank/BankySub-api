@@ -1,6 +1,7 @@
 import express from "express";
 import db from '../config/database.js';
 import axios from "axios";
+import { decrypt } from "../uttilis/encrypt.js";
 import dotenv from "dotenv";
 const router = express.Router();
 dotenv.config();
@@ -315,187 +316,151 @@ router.post("/purchase/bundle", async (req, res) => {
                   Ported_number: true,
                 };
 
-                let headers = {};
-
-                if (choosenDataType === "SME") {
-                  headers = {
-                    Authorization: process.env.SME_DATA_API_TOKEN,
-                    "Content-Type": "application/json",
-                  };
-                } else if (choosenDataType === "GIFTING") {
-                  headers = {
-                    Authorization: process.env.GIFTING_DATA_API_TOKEN,
-                    "Content-Type": "application/json",
-                  };
-                } else if (choosenDataType === "CORPORATE GIFTING") {
-                  headers = {
-                    Authorization: process.env.CORPORATE_DATA_API_TOKEN,
-                    "Content-Type": "application/json",
-                  };
-                } else if (choosenDataType === 'SME2') {
-                  headers = {
-                    Authorization: process.env.SME2_DATA_API_TOKEN,
-                    "Content-Type": "application/json",
-                  }
-                } else if (choosenDataType === 'DATA SHARE') {
-                  headers = {
-                    Authorization: process.env.DATA_SHARE_API_TOKEN,
-                    "Content-Type": "application/json",
-                  }
-                } else if (choosenDataType === 'DATA COUPON') {
-                  headers = {
-                    Authorization: process.env.DATA_COUPON_API_TOKEN,
-                    "Content-Type": "application/json",
-                  }
-                } else {
-                  console.log("Invalid API credentials");
-                  return;
-                }
-
-                try {
-                  let apiUrl = "";
-                  if (choosenDataType === "SME") {
-                    apiUrl = process.env.SME_DATA_API_URL;
-                  } else if (choosenDataType === "GIFTING") {
-                    apiUrl = process.env.GIFTING_DATA_API_URL;
-                  } else if (choosenDataType === "CORPORATE GIFTING") {
-                    apiUrl = process.env.CORPORATE_DATA_API_URL;
-                  } else if (choosenDataType === "SME2") {
-                    apiUrl = process.env.SME2_DATA_API_URL;
-                  } else if (choosenDataType === 'DATA SHARE') {
-                    apiUrl = process.env.DATA_SHARE_API_URL;
-                  } else if (choosenDataType === 'DATA COUPON') {
-                    apiUrl = process.env.DATA_COUPON_API_URL;
-                  } else {
-                    console.log("Invalid API url");
+                db.query(`SELECT api_key, api_url FROM env WHERE service_type = ?`, [choosenDataType], async (err, apiDocs) => {
+                  if (err) {
+                    console.error('Failed to select api details.', err.message);
                     return;
                   }
 
-                  //choose api call for ncwallet and msorg
-                  let response;
-
-                  //nc wallet
-                  if (choosenDataType === 'DATA SHARE') {
-                    response = await axios.post(apiUrl, ncRequestBody, {
-                      headers,
-                    });
-                  } else {
-
-                    //msorg
-                    response = await axios.post(apiUrl, requestBody, {
-                      headers,
-                    });
+                  if (!apiDocs || apiDocs.length === 0) {
+                    console.error("No API found for the given service type.");
+                    return;
                   }
+                  const { api_key, api_url } = apiDocs[0];
+                  const decryptKey = decrypt(api_key);
 
-                  //Deduct payment
-                  db.execute(
-                    `SELECT user_balance FROM users WHERE d_id = ?`,
-                    [userId],
-                    (err, result) => {
-                      if (err || result.length === 0) {
-                        console.error("Error slecting user balance");
-                        return res
-                          .status(500)
-                          .json({ message: "Error slecting user balance" });
-                      }
+                  let headers = {
+                    Authorization: decryptKey,
+                    "Content-Type": "application/json"
+                  };
 
-                      const wallet = result[0].user_balance;
-                      if (wallet < DataPrice) {
-                        console.error("Insufficient wallet balance");
-                        return res
-                          .status(404)
-                          .json({ message: "Insufficient wallet balance" });
-                      }
-                      const newBalance = wallet - DataPrice;
+                  try {
 
-                      //Deduct user
-                      db.execute(
-                        `UPDATE users SET user_balance = ? WHERE d_id = ?`,
-                        [newBalance, userId],
-                        (err, result) => {
-                          if (err) {
-                            console.error(
-                              "Failed to deduct user wallet for Data"
-                            );
-                            return res.status(500).json({
-                              message: "Failed to deduct user wallet for Data",
-                            });
-                          }
+                    //choose api call for ncwallet and msorg
+                    let response;
+                    //nc wallet
+                    if (choosenDataType === 'DATA SHARE') {
+                      response = await axios.post(api_url, ncRequestBody, {
+                        headers,
+                      });
+                    } else {
 
-                          db.execute(
-                            `UPDATE users SET prev_balance = ? WHERE d_id = ?`,
-                            [wallet, userId],
-                            (err, result) => {
-                              if (err) {
-                                console.error("Failed to set previous balance");
-                                return res.status(500).json({
-                                  message: "Failed to set previous balance",
-                                });
-                              }
+                      //msorg
+                      response = await axios.post(api_url, requestBody, {
+                        headers,
+                      });
+                    }
 
-                              if (response.data.status === "failed" || response.data.status === "Failed" ||
-                                response.data.status === "Fail" || response.data.status === "fail" || response.status >= 400) {
+                    //Deduct payment
+                    db.execute(
+                      `SELECT user_balance FROM users WHERE d_id = ?`,
+                      [userId],
+                      (err, result) => {
+                        if (err || result.length === 0) {
+                          console.error("Error slecting user balance");
+                          return res
+                            .status(500)
+                            .json({ message: "Error slecting user balance" });
+                        }
+
+                        const wallet = result[0].user_balance;
+                        if (wallet < DataPrice) {
+                          console.error("Insufficient wallet balance");
+                          return res
+                            .status(404)
+                            .json({ message: "Insufficient wallet balance" });
+                        }
+                        const newBalance = wallet - DataPrice;
+
+                        //Deduct user
+                        db.execute(
+                          `UPDATE users SET user_balance = ? WHERE d_id = ?`,
+                          [newBalance, userId],
+                          (err, result) => {
+                            if (err) {
+                              console.error(
+                                "Failed to deduct user wallet for Data"
+                              );
+                              return res.status(500).json({
+                                message: "Failed to deduct user wallet for Data",
+                              });
+                            }
+
+                            db.execute(
+                              `UPDATE users SET prev_balance = ? WHERE d_id = ?`,
+                              [wallet, userId],
+                              (err, result) => {
+                                if (err) {
+                                  console.error("Failed to set previous balance");
+                                  return res.status(500).json({
+                                    message: "Failed to set previous balance",
+                                  });
+                                }
+
+                                if (response.data.status === "failed" || response.data.status === "Failed" ||
+                                  response.data.status === "Fail" || response.data.status === "fail" || response.status >= 400) {
+                                  db.execute(
+                                    `UPDATE users SET user_balance = ? WHERE d_id = ?`,
+                                    [wallet, userId],
+                                    (err, result) => {
+                                      if (err) {
+                                        console.error("Failed to refund user");
+                                        return res
+                                          .status(404)
+                                          .json({
+                                            message: "Failed to refund user",
+                                          });
+                                      }
+                                      console.log("User refunded");
+                                    }
+                                  );
+                                  return res.status(500).json({ message: 'Transaction Failed' });
+                                }
+
+                                const status =
+                                  response.data.Status ?? response.data.status;
+
+                                const dataHist = `INSERT INTO dataTransactionHist(id, plan, phone_number, amount, balance_before, balance_after, status, time) VALUES(?, ?, ?, ?, ?, ?, ?, NOW())`;
                                 db.execute(
-                                  `UPDATE users SET user_balance = ? WHERE d_id = ?`,
-                                  [wallet, userId],
+                                  dataHist,
+                                  [
+                                    userId,
+                                    plan,
+                                    mobileNumber,
+                                    DataPrice,
+                                    wallet,
+                                    newBalance,
+                                    status,
+                                  ],
                                   (err, result) => {
                                     if (err) {
-                                      console.error("Failed to refund user");
+                                      console.log(
+                                        "Failed to insert transaction record",
+                                        err.message
+                                      );
                                       return res
-                                        .status(404)
+                                        .status(500)
                                         .json({
-                                          message: "Failed to refund user",
+                                          message:
+                                            "Failed to insert transaction record",
                                         });
                                     }
-                                    console.log("User refunded");
+                                    res.status(200).json(response.data);
                                   }
                                 );
-                                return res.status(500).json({ message: 'Transaction Failed' });
                               }
-
-                              const status =
-                                response.data.Status ?? response.data.status;
-
-                              const dataHist = `INSERT INTO dataTransactionHist(id, plan, phone_number, amount, balance_before, balance_after, status, time) VALUES(?, ?, ?, ?, ?, ?, ?, NOW())`;
-                              db.execute(
-                                dataHist,
-                                [
-                                  userId,
-                                  plan,
-                                  mobileNumber,
-                                  DataPrice,
-                                  wallet,
-                                  newBalance,
-                                  status,
-                                ],
-                                (err, result) => {
-                                  if (err) {
-                                    console.log(
-                                      "Failed to insert transaction record",
-                                      err.message
-                                    );
-                                    return res
-                                      .status(500)
-                                      .json({
-                                        message:
-                                          "Failed to insert transaction record",
-                                      });
-                                  }
-                                  res.status(200).json(response.data);
-                                }
-                              );
-                            }
-                          );
-                        }
-                      );
-                    }
-                  );
-                } catch (err) {
-                  console.error("Failed to fetch from API", err);
-                  res
-                    .status(500)
-                    .json({ error: "Failed to fetch data from external API" });
-                }
+                            );
+                          }
+                        );
+                      }
+                    );
+                  } catch (err) {
+                    console.error("Failed to fetch from API", err);
+                    res
+                      .status(500)
+                      .json({ error: "Failed to fetch data from external API" });
+                  }
+                });
               }
             );
           }

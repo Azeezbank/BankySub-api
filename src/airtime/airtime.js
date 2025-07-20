@@ -98,7 +98,6 @@ router.post("/topup", async (req, res) => {
 
       const { api_key, api_url } = apiDoc[0];
       const decryptKey = decrypt(api_key);
-console.log(decryptKey, 'Key')
   const headers = {
     Authorization: decryptKey,
     "Content-Type": "application/json",
