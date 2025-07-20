@@ -1,6 +1,6 @@
 import express from 'express';
 import db from '../config/database.js';
-import { encrypt } from '../uttilis/encrypt.js';
+import { encrypt, decrypt } from '../uttilis/encrypt.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -66,8 +66,13 @@ router.get('/', (req, res) => {
             return res.status(500).json({ message: 'Failed to select API Docs' })
         }
 
-        res.status(200).json(result);
-    })
-})
+        const decryptApiKey = result.map((key) => ({
+            ...key,
+            api_key: decrypt(key.api_key)
+        }));
+
+        res.status(200).json(decryptApiKey);
+    });
+});
 
 export default router;
