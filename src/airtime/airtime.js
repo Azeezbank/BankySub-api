@@ -100,7 +100,7 @@ router.post("/topup", async (req, res) => {
       const decryptKey = decrypt(api_key);
 console.log(decryptKey, 'Key')
   const headers = {
-    Authorization: decryptToken,
+    Authorization: decryptKey,
     "Content-Type": "application/json",
   };
 
