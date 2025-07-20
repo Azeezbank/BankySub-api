@@ -41,7 +41,6 @@ app.use('/api/verification', authenticateToken, verification);
 app.use('/api/transaction', authenticateToken, transaction);
 app.use('/api/logout', authenticateToken, signout);
 app.use('/api/admin/env', env);
-//envTable(); // Initialize the env table
 
 
 
