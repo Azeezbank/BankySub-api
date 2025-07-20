@@ -149,6 +149,7 @@ router.post("/login", (req, res) => {
         httpOnly: true,
         secure: true,
         sameSite: "none",
+        path: '/'
       });
 
       res.status(200).json({ message: "login successful" });
