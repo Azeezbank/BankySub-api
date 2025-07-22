@@ -69,17 +69,17 @@ router.post('/verify/mail', (req, res) => {
   const sql = `SELECT verificationOTP, username, referree FROM users WHERE verificationOTP = ?`;
   db.query(sql, [otp], (err, result) => {
     if (err || result.length === 0 || result[0].verificationOTP !== otp) {
-      console.error('Invalid Verification Code', err.message);
+      console.error('Invalid Verification Code', err);
       return res.status(404).json({ message: 'Invalid Verification Code, Please input valid verification code' });
     }
 
-    const { code, username, referree } = result[0];
-    const totalReferree = referree + 1;
+    const { username, referree } = result[0];
+    const totalReferree = (referree || 0) + 1;
 
     const sql2 = `UPDATE users SET isverified = 'true', referree = ? WHERE verificationOTP = ?`;
-    db.execute(sql2, [code, totalReferree], async (err, updateUser) => {
+    db.execute(sql2, [totalReferree, otp], async (err, updateUser) => {
       if (err) {
-        console.error('Failed to verify user', err.message);
+        console.error('Failed to verify user', err);
         return res.status(500).json({ message: 'Failed to verify user' });
       }
 
@@ -106,7 +106,7 @@ router.post("/login", (req, res) => {
     [username],
     async (err, results) => {
       if (err || results.length === 0) {
-        console.log("User not found", err.message);
+        console.log("User not found", err);
         return res.status(404).json({ message: "User not found" });
       }
       const user = results[0];
