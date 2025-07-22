@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model AirtimeN {
+  d_id      Int                 @id @default(autoincrement())
+  name      String?             @db.VarChar(10)
+  is_active AirtimeN_is_active? @default(active)
+  id        Int?
+}
+
+model AirtimeT {
+  d_id      Int                 @id @default(autoincrement())
+  name      String?             @db.VarChar(10)
+  is_active AirtimeT_is_active? @default(active)
+}
+
+model admin_setting {
+  d_id            Int     @id @default(autoincrement())
+  whatsapp_phone  String? @db.VarChar(15)
+  whatsapp_link   String? @db.VarChar(255)
+  dash_message    String? @db.Text
+  whatsapp_number String? @db.VarChar(255)
+}
+
+model airtimeHist {
+  d_id             Int       @id @default(autoincrement())
+  id               Int?
+  network          String?   @db.VarChar(15)
+  amount           String?   @db.VarChar(15)
+  phone_number     String?   @db.VarChar(20)
+  previous_balance String?   @db.VarChar(15)
+  new_balance      String?   @db.VarChar(15)
+  time             DateTime? @db.DateTime(0)
+  status           String?   @db.VarChar(15)
+  airtimeType      String?   @db.VarChar(20)
+}
+
+model dataTransactionHist {
+  d_id           Int       @id @default(autoincrement())
+  id             Int?
+  plan           String?   @db.VarChar(255)
+  phone_number   String?   @db.VarChar(20)
+  amount         String?   @db.VarChar(20)
+  balance_before String?   @db.VarChar(20)
+  balance_after  String?   @db.VarChar(20)
+  status         String?   @db.VarChar(20)
+  time           DateTime? @db.DateTime(0)
+}
+
+model data_plans {
+  d_id         Int                   @id @default(autoincrement())
+  id           Int?
+  name         String?               @db.VarChar(20)
+  network_name String?               @db.VarChar(10)
+  data_type    String?               @db.VarChar(25)
+  validity     String?               @db.VarChar(15)
+  is_active    data_plans_is_active? @default(active)
+  USER         Int?
+  RESELLER     Int?
+  API          Int?
+}
+
+model data_types {
+  d_id         Int                   @id @default(autoincrement())
+  name         String?               @db.VarChar(20)
+  is_active    data_types_is_active? @default(active)
+  network_name String?               @db.VarChar(15)
+}
+
+model env {
+  d_id         Int     @id @default(autoincrement())
+  service_type String? @db.VarChar(255)
+  api_key      String? @db.VarChar(255)
+  api_url      String? @db.VarChar(255)
+}
+
+model networks {
+  d_id      Int                 @id @default(autoincrement())
+  name      String?             @db.VarChar(10)
+  is_active networks_is_active? @default(active)
+  id        Int?
+}
+
+model paymentHist {
+  d_id           Int       @id @default(autoincrement())
+  id             Int?
+  event_type     String?   @db.VarChar(100)
+  payment_ref    String?   @db.VarChar(255)
+  paid_on        DateTime? @db.DateTime(0)
+  amount         Int?
+  payment_method String?   @db.VarChar(255)
+  payment_status String?   @db.VarChar(50)
+  prev_balance   Int?
+  user_balance   Int?
+}
+
+model transactionWebHook {
+  d_id             Int       @id @default(autoincrement())
+  webHook_response String?   @db.VarChar(800)
+  create_date      DateTime? @db.DateTime(0)
+}
+
+model userBankDetails1 {
+  d_id      Int                         @id @default(autoincrement())
+  id        Int?
+  acctNo    String?                     @db.VarChar(255)
+  acctName  String?                     @db.VarChar(255)
+  bankName  String?                     @db.VarChar(255)
+  is_active userBankDetails1_is_active? @default(active)
+  acct_id   Int?
+}
+
+model users {
+  d_id            Int               @id @default(autoincrement())
+  username        String?           @db.VarChar(20)
+  user_pass       String?           @db.VarChar(255)
+  user_email      String?           @db.VarChar(100)
+  user_registered DateTime?         @default(now()) @db.Timestamp(0)
+  prev_balance    Int?
+  user_balance    Int?
+  packages        users_packages?   @default(USER)
+  Pin             Int?
+  Phone_number    String?           @db.VarChar(15)
+  role            users_role?       @default(user)
+  nin             String?           @db.VarChar(11)
+  verificationOTP String?           @db.VarChar(100)
+  isverified      String            @default("false")
+  fullName        String?           @db.VarChar(255)
+  isban           String            @default("false")
+  referral        String?
+  isFund          String            @default("false")
+  cashback        Int?
+  referree        Int?
+
+}
+
+enum AirtimeN_is_active {
+  active
+  disabled
+}
+
+enum data_types_is_active {
+  active
+  disabled
+}
+
+enum networks_is_active {
+  active
+  disabled
+}
+
+enum AirtimeT_is_active {
+  active
+  disabled
+}
+
+enum userBankDetails1_is_active {
+  active
+  disabled
+}
+
+enum data_plans_is_active {
+  active
+  disabled
+}
+
+enum users_packages {
+  USER
+  RESELLER
+  API
+}
+
+enum users_role {
+  admin
+  user
+}
+
+

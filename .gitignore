@@ -11,3 +11,4 @@ node_modules/
 # Buildfiles
 dist/
 build/
+/src/generated/prisma

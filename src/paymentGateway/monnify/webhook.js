@@ -2,6 +2,8 @@ import express from "express";
 import db from '../../config/database.js';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
 dotenv.config();
 const router = express.Router();
@@ -50,7 +52,7 @@ router.post("/", async (req, res) => {
 
   try {
     db.query(
-      `SELECT user_balance FROM users WHERE d_id = ?`,
+      `SELECT user_balance, isFund, referral FROM users WHERE d_id = ?`,
       [reference],
       (err, result) => {
         if (err || result.length === 0) {
@@ -61,6 +63,8 @@ router.post("/", async (req, res) => {
 
         const prevBalance = result[0].user_balance;
         const newBalance = prevBalance + netAmount;
+        const { isFund, referral } = result[0];
+
 
         const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, prev_balance, user_balance) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
@@ -77,7 +81,7 @@ router.post("/", async (req, res) => {
             prevBalance,
             newBalance,
           ],
-          (err, result) => {
+          (err, payhist) => {
             if (err) {
               console.error("Failed to insert payment history", err);
               return res
@@ -88,15 +92,36 @@ router.post("/", async (req, res) => {
             db.execute(
               `UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`,
               [newBalance, prevBalance, reference],
-              (err, result) => {
+              async (err, result) => {
                 if (err) {
                   return res
                     .status(500)
                     .json({ message: "Failed to update user balance" });
                 }
+
+                //Calculate the referral % amount
+                const referralPercentage = 2;
+                const referralBonus = (referralPercentage / 100) * netAmount;
+
+                if (isFund === 'false') {
+                  const refer = await prisma.users.findUnique({ where: { username: referral } });
+                  if (!refer) {
+                    console.log('No referral found');
+                  } else {
+                  await prisma.users.update({
+                    where: { username: referral },
+                    data: {
+                      cashback: { increment: referralBonus },
+                      isFund: 'true'
+                    }
+                  });
+                }
+                }
+
                 res
                   .status(200)
                   .json({ message: "Webhook proccessed successfully" });
+
               }
             );
           }

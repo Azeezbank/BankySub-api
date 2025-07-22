@@ -11,7 +11,7 @@ dotenv.config();
 
 //Route to register user
 router.post("/register", async (req, res) => {
-  const { password, username, email, phone, fullName } = req.body;
+  const { password, username, email, phone, fullName, referralUsername } = req.body;
 
   db.query(
     `SELECT * FROM users WHERE user_email = ?`,
@@ -29,11 +29,11 @@ router.post("/register", async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-        const sql = `INSERT INTO users (user_pass, username, user_email, Phone_number, verificationOTP, fullName) VALUES (?, ?, ?, ?, ?, ?);`;
+        const sql = `INSERT INTO users (user_pass, username, user_email, Phone_number, verificationOTP, fullName, referral) VALUES (?, ?, ?, ?, ?, ?);`;
 
         db.query(
           sql,
-          [hashedPassword, username, email, phone, verificationCode, fullName],
+          [hashedPassword, username, email, phone, verificationCode, fullName, referralUsername],
           async (err, result) => {
             if (err) {
               console.error("Error registering user", err);
@@ -65,22 +65,24 @@ router.post("/register", async (req, res) => {
 //Verify user mail
 router.post('/verify/mail', (req, res) => {
   const { otp } = req.body;
-  const sql = `SELECT * FROM users WHERE verificationOTP = ?`;
+  const sql = `SELECT verificationOTP, username, referree FROM users WHERE verificationOTP = ?`;
   db.query(sql, [otp], (err, result) => {
     if (err || result.length === 0 || result[0].verificationOTP !== otp) {
       console.error('Invalid Verification Code', err.message);
       return res.status(404).json({ message: 'Invalid Verification Code, Please input valid verification code' });
     }
 
-    const code = result[0].verificationOTP;
-    const username = result[0].username;
+    const { code, username, referree } = result[0];
+    const totalReferree = referree + 1;
 
-    const sql2 = `UPDATE users SET isverified = 'true' WHERE verificationOTP = ?`;
-    db.execute(sql2, [code], async (err, updateUser) => {
+    const sql2 = `UPDATE users SET isverified = 'true', referree = ? WHERE verificationOTP = ?`;
+    db.execute(sql2, [code, totalReferree], async (err, updateUser) => {
       if (err) {
         console.error('Failed to verify user', err.message);
         return res.status(500).json({ message: 'Failed to verify user' });
       }
+
+
 
       // Send email
       await transporter.sendMail({

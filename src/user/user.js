@@ -51,7 +51,7 @@ router.get("/", (req, res) => {
 //Select user details
 router.get("/info", (req, res) => {
   const userid = req.user.id;
-  const sql = `SELECT username, user_balance, role, packages FROM users WHERE d_id = ?`;
+  const sql = `SELECT username, user_balance, role, packages, cashback, referree FROM users WHERE d_id = ?`;
   db.query(sql, [userid], (err, result) => {
     if (err) {
       return res.status(500).json({ message: "Error selecting user" });

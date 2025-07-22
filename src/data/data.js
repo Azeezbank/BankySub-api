@@ -2,7 +2,9 @@ import express from "express";
 import db from '../config/database.js';
 import axios from "axios";
 import { decrypt } from "../uttilis/encrypt.js";
+import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
+const prisma = new PrismaClient();
 const router = express.Router();
 dotenv.config();
 
@@ -397,9 +399,12 @@ router.post("/purchase/bundle", async (req, res) => {
                                   });
                                 }
 
-                                if (response.data.status === "failed" || response.data.status === "Failed" ||
-                                  response.data.status === "Fail" || response.data.status === "fail" || response.status >= 400) {
-                                  db.execute(
+                                const status =
+                                  response.data.Status ?? response.data.status;
+
+                                if (status === "failed" || status === "Failed" ||
+                                  status === "Fail" || status === "fail" || status >= 400) {
+                                  return db.execute(
                                     `UPDATE users SET user_balance = ? WHERE d_id = ?`,
                                     [wallet, userId],
                                     (err, result) => {
@@ -412,13 +417,10 @@ router.post("/purchase/bundle", async (req, res) => {
                                           });
                                       }
                                       console.log("User refunded");
+                                       return res.status(500).json({ message: 'Transaction Failed' });
                                     }
                                   );
-                                  return res.status(500).json({ message: 'Transaction Failed' });
                                 }
-
-                                const status =
-                                  response.data.Status ?? response.data.status;
 
                                 const dataHist = `INSERT INTO dataTransactionHist(id, plan, phone_number, amount, balance_before, balance_after, status, time) VALUES(?, ?, ?, ?, ?, ?, ?, NOW())`;
                                 db.execute(
@@ -432,7 +434,7 @@ router.post("/purchase/bundle", async (req, res) => {
                                     newBalance,
                                     status,
                                   ],
-                                  (err, result) => {
+                                  async (err, result) => {
                                     if (err) {
                                       console.log(
                                         "Failed to insert transaction record",
@@ -445,6 +447,10 @@ router.post("/purchase/bundle", async (req, res) => {
                                             "Failed to insert transaction record",
                                         });
                                     }
+
+                                    // reward user with cashback
+                                    const cashBack = (0.2 / 100) * DataPrice;
+                                    await prisma.users.update({where: {d_id: userId}, data: {cashback: cashBack}});
                                     res.status(200).json(response.data);
                                   }
                                 );
