@@ -1,6 +1,6 @@
 const allowedOrigins = [
-  "https://bankysub.vercel.app/",
-  "http://localhost:5173/",
+  "https://bankysub.vercel.app",
+  "http://localhost:5173",
 ];
 
 const corsOptions = {
