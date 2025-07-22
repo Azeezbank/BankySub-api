@@ -23,9 +23,10 @@ import  env  from './adminPage/env.js';
 const port = process.env.PORT || 3006;
 
 const app = express();
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 dotenv.config();
-app.use(cors(corsOptions));
 app.use(cookieParser());
 
 app.use('/api/auth', auth);
