@@ -3,7 +3,9 @@ import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import db from "../config/database.js";
 import transporter from "../config/mailer.js";
+import { Prisma, PrismaClient } from "@prisma/client";
 import JWT from "jsonwebtoken";
+const prisma = new PrismaClient();
 
 const router = express.Router();
 dotenv.config();
@@ -66,24 +68,24 @@ console.log('working');
 //Verify user mail
 router.post('/verify/mail', (req, res) => {
   const { otp } = req.body;
-  const sql = `SELECT verificationOTP, username, referree FROM users WHERE verificationOTP = ?`;
+  const sql = `SELECT verificationOTP, username, referral FROM users WHERE verificationOTP = ?`;
   db.query(sql, [otp], (err, result) => {
     if (err || result.length === 0 || result[0].verificationOTP !== otp) {
       console.error('Invalid Verification Code', err);
       return res.status(404).json({ message: 'Invalid Verification Code, Please input valid verification code' });
     }
 
-    const { username, referree } = result[0];
+    const { username, referral } = result[0];
     const totalReferree = (referree || 0) + 1;
 
-    const sql2 = `UPDATE users SET isverified = 'true', referree = ? WHERE verificationOTP = ?`;
-    db.execute(sql2, [totalReferree, otp], async (err, updateUser) => {
+    const sql2 = `UPDATE users SET isverified = 'true', WHERE verificationOTP = ?`;
+    db.execute(sql2, [otp], async (err, updateUser) => {
       if (err) {
         console.error('Failed to verify user', err);
         return res.status(500).json({ message: 'Failed to verify user' });
       }
-
-
+      
+      await prisma.users.update({where: {username: referral }, data: {referree: totalReferree}});
 
       // Send email
       await transporter.sendMail({
