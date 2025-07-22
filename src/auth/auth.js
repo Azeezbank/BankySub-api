@@ -76,16 +76,15 @@ router.post('/verify/mail', (req, res) => {
     }
 
     const { username, referral } = result[0];
-    const totalReferree = (referree || 0) + 1;
 
-    const sql2 = `UPDATE users SET isverified = 'true', WHERE verificationOTP = ?`;
+    const sql2 = `UPDATE users SET isverified = 'true' WHERE verificationOTP = ?`;
     db.execute(sql2, [otp], async (err, updateUser) => {
       if (err) {
         console.error('Failed to verify user', err);
         return res.status(500).json({ message: 'Failed to verify user' });
       }
       
-      await prisma.users.update({where: {username: referral }, data: {referree: totalReferree}});
+      await prisma.users.update({where: {username: referral }, data: {referree: {increment: 1}}});
 
       // Send email
       await transporter.sendMail({
