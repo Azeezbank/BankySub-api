@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import db from "../config/database.js";
 import transporter from "../config/mailer.js";
 import JWT from "jsonwebtoken";
+
 const router = express.Router();
 dotenv.config();
 
@@ -12,7 +13,7 @@ dotenv.config();
 //Route to register user
 router.post("/register", async (req, res) => {
   const { password, username, email, phone, fullName, referralUsername } = req.body;
-
+console.log('working');
   db.query(
     `SELECT * FROM users WHERE user_email = ?`,
     [email],
@@ -29,7 +30,7 @@ router.post("/register", async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-        const sql = `INSERT INTO users (user_pass, username, user_email, Phone_number, verificationOTP, fullName, referral) VALUES (?, ?, ?, ?, ?, ?);`;
+        const sql = `INSERT INTO users (user_pass, username, user_email, Phone_number, verificationOTP, fullName, referral) VALUES (?, ?, ?, ?, ?, ?, ?);`;
 
         db.query(
           sql,
