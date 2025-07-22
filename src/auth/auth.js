@@ -17,8 +17,8 @@ router.post("/register", async (req, res) => {
   const { password, username, email, phone, fullName, referralUsername } = req.body;
 console.log('working');
   db.query(
-    `SELECT * FROM users WHERE user_email = ?`,
-    [email],
+    `SELECT * FROM users WHERE user_email = ? || username = ?`,
+    [email, username],
     async (err, result) => {
       if (err) {
         console.error("Error checking user", err);

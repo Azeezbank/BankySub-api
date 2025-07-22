@@ -118,10 +118,10 @@ model userBankDetails1 {
 
 model users {
   d_id            Int               @id @default(autoincrement())
-  username        String           @db.VarChar(20)
+  username        String           @db.VarChar(20)                  @unique
   user_pass       String           @db.VarChar(255)
-  user_email      String           @db.VarChar(100) @unique
-  user_registered DateTime?         @default(now()) @db.Timestamp(0)
+  user_email      String           @db.VarChar(100)                 @unique
+  user_registered DateTime?         @default(now())                 @db.Timestamp(0)
   prev_balance    Int              @default(0)
   user_balance    Int               @default(0)
   packages        users_packages?   @default(USER)
