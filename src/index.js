@@ -33,6 +33,11 @@ app.use(cookieParser());
 
 // Serve Swagger UI at /api-docs
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Add this route to serve the raw swagger spec
+app.get('/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 app.use('/api/auth', auth);
 app.use('/api/data/network', authenticateToken, network);

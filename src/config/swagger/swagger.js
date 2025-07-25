@@ -11,8 +11,13 @@ const options = {
     },
     servers: [
       {
-        url: 'http://bankysub-api.onrender.com', // change this to your backend base URL
+        url: 'https://bankysub-api.onrender.com', // change this to your backend base URL
+        description: "Production server",
       },
+      {
+        url: 'http://localhost:3006',
+        description: "Local development server",
+      }
     ],
     components: {
       securitySchemes: {
