@@ -47,7 +47,7 @@ router.post("/dedicated/account", async (req, res) => {
     const userD = `SELECT username, user_email, nin FROM users WHERE d_id = ?`;
     db.query(userD, [userid], async (err, userDetails) => {
       if (err || userDetails.length === 0) {
-        console.log("Unable to select user details", err.message);
+        console.log("Unable to select user details", err);
         return res
           .status(500)
           .json({ message: "Unable to select user details" });
@@ -56,7 +56,7 @@ router.post("/dedicated/account", async (req, res) => {
       const userDetail = userDetails[0];
 
       if (userDetail.nin.length < 11) {
-        console.log('Invalid NI Number');
+        console.log('Invalid NIN Number');
         return res.status(400).json({ message: 'NIN cannot be empty, submit your NIN' });
       }
 
@@ -102,7 +102,7 @@ router.post("/dedicated/account", async (req, res) => {
       );
     });
   } catch (err) {
-    console.error(err.response?.data || err.message);
+    console.error(err.response?.data || err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });

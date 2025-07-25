@@ -18,6 +18,8 @@ import transaction from './transaction/webhook.js';
 import signout from './logout/logout.js';
 import { authenticateToken } from './auth/middleware.js';
 import  env  from './adminPage/env.js';
+import { swaggerSpec } from './config/swagger/swagger.js';
+import swaggerUi from 'swagger-ui-express'
 
 
 const port = process.env.PORT || 3006;
@@ -28,6 +30,9 @@ app.options('*', cors(corsOptions));
 app.use(express.json());
 dotenv.config();
 app.use(cookieParser());
+
+// Serve Swagger UI at /api-docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use('/api/auth', auth);
 app.use('/api/data/network', authenticateToken, network);
