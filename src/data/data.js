@@ -417,7 +417,7 @@ router.post("/purchase/bundle", async (req, res) => {
                                           });
                                       }
                                       console.log("User refunded");
-                                       return res.status(500).json({ message: 'Transaction Failed' });
+                                      return res.status(500).json({ message: 'Transaction Failed' });
                                     }
                                   );
                                 }
@@ -450,7 +450,12 @@ router.post("/purchase/bundle", async (req, res) => {
 
                                     // reward user with cashback
                                     const cashBack = (0.2 / 100) * DataPrice;
-                                    await prisma.users.update({where: {d_id: userId}, data: {cashback: cashBack}});
+                                    await prisma.users.update({
+                                      where: { d_id: userId }, data: {
+                                        cashback:
+                                          { increment: cashBack }
+                                      }
+                                    });
                                     res.status(200).json(response.data);
                                   }
                                 );
