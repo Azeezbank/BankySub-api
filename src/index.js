@@ -20,6 +20,7 @@ import { authenticateToken } from './auth/middleware.js';
 import  env  from './adminPage/env.js';
 import { swaggerSpec } from './config/swagger/swagger.js';
 import swaggerUi from 'swagger-ui-express'
+import plan from './data/data.js';
 
 
 const port = process.env.PORT || 3006;
@@ -53,6 +54,7 @@ app.use('/api/verification', authenticateToken, verification);
 app.use('/api/transaction', authenticateToken, transaction);
 app.use('/api/logout', authenticateToken, signout);
 app.use('/api/env', authenticateToken, env);
+app.use('/api/home/data', plan);
 
 
 
