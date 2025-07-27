@@ -1,5 +1,5 @@
 const allowedOrigins = [
-  "https://bankysub.vercel.app",
+  "https://bankyconnect.vercel.app",
   "http://localhost:5173",
 ];
 
