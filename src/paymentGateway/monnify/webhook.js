@@ -46,7 +46,6 @@ router.post("/", async (req, res) => {
   const paymentMethod = payload.eventData.paymentMethod;
   const paymentStatus = payload.eventData.paymentStatus;
   const userid = reference.split('_')[1];
-  console.log(userid, 'that is user id');
 
   const chargesPercent = 2;
   const charges = (chargesPercent / 100) * amountPaid;
@@ -93,7 +92,7 @@ router.post("/", async (req, res) => {
 
             db.execute(
               `UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`,
-              [newBalance, prevBalance, reference],
+              [newBalance, prevBalance, userid],
               async (err, result) => {
                 if (err) {
                   return res
