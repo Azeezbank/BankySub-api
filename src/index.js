@@ -21,7 +21,7 @@ import  env  from './adminPage/env.js';
 import { swaggerSpec } from './config/swagger/swagger.js';
 import swaggerUi from 'swagger-ui-express'
 import plan from './data/data.js';
-// import db from './config/database.js';
+import db from './config/database.js';
 
 
 const port = process.env.PORT || 3006;
@@ -41,10 +41,10 @@ app.get('/swagger.json', (req, res) => {
   res.send(swaggerSpec);
 });
 
-// db.execute(`ALTER TABLE users MODIFY COLUMN prev_balance DECIMAL(10, 2) DEFAULT 0.00`, (err, result) => {
-//   if (err) throw err;
-//   console.log('updated')
-// });
+db.execute(`ALTER TABLE paymentHist MODIFY COLUMN user_balance DECIMAL(10, 2) DEFAULT 0.00`, (err, result) => {
+  if (err) throw err;
+  console.log('updated')
+});
 
 app.use('/api/auth', auth);
 app.use('/api/data/network', authenticateToken, network);

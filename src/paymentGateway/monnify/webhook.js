@@ -9,7 +9,7 @@ dotenv.config();
 const router = express.Router();
 
 //Payment transaction table
-// const sql2 = `CREATE TABLE IF NOT EXISTS paymentHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, event_type VARCHAR(100), payment_ref VARCHAR(255), paid_on DATETIME, amount INT, payment_method VARCHAR(255), payment_status VARCHAR(50), prev_balance INT, user_balance INT)`;
+// const sql2 = `CREATE TABLE IF NOT EXISTS paymentHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, event_type VARCHAR(100), payment_ref VARCHAR(255), paid_on DATETIME, amount DECIMAL(10, 2) DEFAULT 0.00, payment_method VARCHAR(255), payment_status VARCHAR(50), prev_balance DECIMAL(10, 2) DEFAULT 0.00, user_balance DECIMAL(10, 2) DEFAULT 0.00)`;
 // db.execute(sql2, (err, result) => {
 //   if (err) {
 //     console.error(err);
@@ -62,7 +62,7 @@ router.post("/", async (req, res) => {
             .json({ message: "Failed to select user balance" });
         }
 
-        const prevBalance = result[0].user_balance;
+        const prevBalance = parseFloat(result[0].user_balance);
         const newBalance = prevBalance + netAmount;
         const { isFund, referral } = result[0];
 
