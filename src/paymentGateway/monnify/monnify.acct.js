@@ -63,7 +63,7 @@ router.post("/dedicated/account", async (req, res) => {
       const response = await axios.post(
         `${MON_BASE_URL}/api/v1/bank-transfer/reserved-accounts`,
         {
-          accountReference: `${randomRef}`,
+          accountReference: `${randomRef}_${userid}`,
           accountName: userDetail.username,
           currencyCode: "NGN",
           contractCode: MON_CONTRACT_CODE,
