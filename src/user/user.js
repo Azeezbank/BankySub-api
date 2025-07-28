@@ -6,7 +6,7 @@ const router = express.Router();
 
 //Create table users
 // db.execute(
-//   `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, username VARCHAR(20), user_pass VARCHAR(255), user_email VARCHAR(100), user_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP, prev_balance INT, user_balance INT, packages ENUM('USER', 'RESELLER', 'API') DEFAULT 'USER', Phone_number VARCHAR(15), Pin INT, role ENUM('admin', 'user') DEFAULT 'user', nin VARCHAR(11), verificationOTP VARCHAR(6), isverified ENUM('true', 'false') DEFAULT 'false', fullName VARCHAR(255), isban ENUM('true', 'false') DEFAULT 'false')`,
+//   `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, username VARCHAR(20), user_pass VARCHAR(255), user_email VARCHAR(100), user_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP, prev_balance DECIMAL(10,2) DEFAULT 0.00, user_balance DECIMAL(10,2) DEFAULT 0.00, packages ENUM('USER', 'RESELLER', 'API') DEFAULT 'USER', Phone_number VARCHAR(15), Pin INT, role ENUM('admin', 'user') DEFAULT 'user', nin VARCHAR(11), verificationOTP VARCHAR(6), isverified ENUM('true', 'false') DEFAULT 'false', fullName VARCHAR(255), isban ENUM('true', 'false') DEFAULT 'false')`,
 //   (err, result) => {
 //     if (err) throw err;
 //     console.log("Table networks created");

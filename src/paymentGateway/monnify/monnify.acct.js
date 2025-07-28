@@ -7,7 +7,7 @@ const router = express.Router();
 
 //User account details
 // db.execute(
-//   `CREATE TABLE IF NOT EXISTS userBankDetails1(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), acctNo VARCHAR(255), acctName VARCHAR(255), bankName VARCHAR(255), is_active ENUM('active', 'disabled') DEFAULT 'active')`,
+//   `CREATE TABLE IF NOT EXISTS userBankDetails1(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(20), acctNo VARCHAR(255), acctName VARCHAR(255), bankName VARCHAR(255), acct_id VARCHAR(100), is_active ENUM('active', 'disabled') DEFAULT 'active')`,
 //   async (err, result) => {
 //     if (err) throw err;
 //     console.log("BANK CREATED");
