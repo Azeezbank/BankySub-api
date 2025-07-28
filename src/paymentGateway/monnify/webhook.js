@@ -45,7 +45,8 @@ router.post("/", async (req, res) => {
   const amountPaid = payload.eventData.amountPaid;
   const paymentMethod = payload.eventData.paymentMethod;
   const paymentStatus = payload.eventData.paymentStatus;
-  const userId = reference.split('_')[1];
+  const userid = reference.split('_')[1];
+  console.log(userid, 'that is user id');
 
   const chargesPercent = 2;
   const charges = (chargesPercent / 100) * amountPaid;
@@ -54,7 +55,7 @@ router.post("/", async (req, res) => {
   try {
     db.query(
       `SELECT user_balance, isFund, referral FROM users WHERE d_id = ?`,
-      [userId],
+      [userid],
       (err, result) => {
         if (err || result.length === 0) {
           return res
@@ -72,7 +73,7 @@ router.post("/", async (req, res) => {
         db.execute(
           sql,
           [
-            userId,
+            userid,
             eventType,
             paymentRef,
             paidOn,
