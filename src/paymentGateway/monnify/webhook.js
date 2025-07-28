@@ -72,7 +72,7 @@ router.post("/", async (req, res) => {
         db.execute(
           sql,
           [
-            reference,
+            userId,
             eventType,
             paymentRef,
             paidOn,
