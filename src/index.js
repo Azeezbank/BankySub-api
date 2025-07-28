@@ -45,9 +45,8 @@ app.use('/api/data/network', authenticateToken, network);
 app.use('/api/protected', authenticateToken, protectedRoutes);
 app.use('/api/data', authenticateToken, data);
 app.use('/api/airtime', authenticateToken, airtime);
-app.use('/api/monnify', authenticateToken, monnify);
-app.use('/api/user', authenticateToken, user);
 app.use('/api/monnify/webhook', monnifyWebhook);
+app.use('/api/user', authenticateToken, user);
 app.use('/api/payment/history', authenticateToken, history);
 app.use('/api/admin', authenticateToken, adminPage);
 app.use('/api/verification', authenticateToken, verification);
@@ -55,6 +54,7 @@ app.use('/api/transaction', authenticateToken, transaction);
 app.use('/api/logout', authenticateToken, signout);
 app.use('/api/env', authenticateToken, env);
 app.use('/api/home/data', plan);
+app.use('/api/monnify', authenticateToken, monnify);
 
 
 
