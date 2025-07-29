@@ -337,22 +337,6 @@ router.post("/purchase/bundle", async (req, res) => {
                   };
 
                   try {
-
-                    //choose api call for ncwallet and msorg
-                    let response;
-                    //nc wallet
-                    if (choosenDataType === 'DATA SHARE') {
-                      response = await axios.post(api_url, ncRequestBody, {
-                        headers,
-                      });
-                    } else {
-
-                      //msorg
-                      response = await axios.post(api_url, requestBody, {
-                        headers,
-                      });
-                    }
-
                     //Deduct payment
                     db.execute(
                       `SELECT user_balance FROM users WHERE d_id = ?`,
@@ -391,13 +375,30 @@ router.post("/purchase/bundle", async (req, res) => {
                             db.execute(
                               `UPDATE users SET prev_balance = ? WHERE d_id = ?`,
                               [wallet, userId],
-                              (err, result) => {
+                              async (err, result) => {
                                 if (err) {
                                   console.error("Failed to set previous balance");
                                   return res.status(500).json({
                                     message: "Failed to set previous balance",
                                   });
                                 }
+
+
+                                //choose api call for ncwallet and msorg
+                                let response;
+                                //nc wallet
+                                if (choosenDataType === 'DATA SHARE') {
+                                  response = await axios.post(api_url, ncRequestBody, {
+                                    headers,
+                                  });
+                                } else {
+
+                                  //msorg
+                                  response = await axios.post(api_url, requestBody, {
+                                    headers,
+                                  });
+                                }
+
 
                                 const status =
                                   response.data.Status ?? response.data.status;
