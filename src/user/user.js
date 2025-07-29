@@ -84,7 +84,7 @@ router.post("/bank/account", (req, res) => {
 
 //Fund user manually
 router.post("/fund/:id", (req, res) => {
-  const { amount } = req.body;
+  const amount = parseFloat(req.body.amount);
   const id = req.params.id;
   const event_type = "Manual Fund";
   const payment_ref = 'Admin Approved';
@@ -103,18 +103,18 @@ router.post("/fund/:id", (req, res) => {
   // Select user balance
   db.query(`SELECT user_balance FROM users WHERE d_id = ?`, [id], (err, result) => {
     if (err || result.length === 0) {
-      console.error("Error selecting user balance", err.message);
+      console.error("Error selecting user balance", err);
       return res.status(500).json({ message: "Error selecting user balance" });
     }
 
-    const walletBalance = result[0].user_balance;
+    const walletBalance = parseFloat(result[0].user_balance);
 
     const newBalance = walletBalance + amount;
 
     const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, prev_balance, user_balance) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     db.execute(sql, [id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, walletBalance, newBalance], (err, results) => {
       if (err) {
-        console.error('Failed to insert funding record', err.message);
+        console.error('Failed to insert funding record', err);
         return res.status(500).json({ message: 'Failed to insert funding recorf' });
       }
 
@@ -122,7 +122,7 @@ router.post("/fund/:id", (req, res) => {
       const sql2 = `UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`;
       db.execute(sql2, [newBalance, walletBalance, id], (err, result) => {
         if (err) {
-          console.error('Failed to update user balance', err.message);
+          console.error('Failed to update user balance', err);
           return res.status(500).json({ message: 'Failed to update user balance' });
         }
         res.status(200).json({ message: 'Wallet Funded Manually successfully' });
@@ -137,7 +137,7 @@ router.get("/info/:id", (req, res) => {
   const sql = `SELECT d_id, username, user_email, user_balance, packages, Phone_number, Pin, fullName FROM users WHERE d_id = ?`;
   db.query(sql, [id], (err, result) => {
     if (err) {
-      console.error('Failed to select user details', err.message);
+      console.error('Failed to select user details', err);
       return res.status(500).json({ message: 'Failed to select user details' });
     }
     res.status(200).json(result[0])
@@ -160,7 +160,7 @@ router.put("/update/:id", (req, res) => {
 
   db.execute(sql, [value, id], (err, result) => {
     if (err) {
-      console.error("Failed to update user details", err.message);
+      console.error("Failed to update user details", err);
       return res.status(500).json({ message: "Failed to update user details" });
     }
     res.status(200).json({ message: "User details updated successfully" });
@@ -174,7 +174,7 @@ router.put("/ban/:id", (req, res) => {
   const sql = `UPDATE users SET isban = ? WHERE d_id = ?`;
   db.execute(sql, [ban, id], (err, result) => {
     if (err) {
-      console.error('Failed to Ban user', err.message);
+      console.error('Failed to Ban user', err);
       return res.status(500).json({ message: 'Failed to Ban user' });
     }
   })
