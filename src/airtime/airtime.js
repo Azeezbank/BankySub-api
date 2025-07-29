@@ -92,147 +92,153 @@ router.post("/topup", async (req, res) => {
       }
 
       if (!apiDoc || apiDoc.length === 0) {
-      console.error("No API found for the given service type.");
-      return;
-    }
+        console.error("No API found for the given service type.");
+        return;
+      }
 
       const { api_key, api_url } = apiDoc[0];
       const decryptKey = decrypt(api_key);
-  const headers = {
-    Authorization: decryptKey,
-    "Content-Type": "application/json",
-  };
+      const headers = {
+        Authorization: decryptKey,
+        "Content-Type": "application/json",
+      };
 
-    const response = await axios.post(
-      api_url,
-      airtimeBody,
-      { headers }
-    );
-    //Deduct payment
-    db.execute(
-      `SELECT user_balance FROM users WHERE d_id = ?`,
-      [userid],
-      (err, result) => {
-        if (err || result.length === 0) {
-          console.error("Error slecting user balance");
-          return res
-            .status(500)
-            .json({ message: "Error slecting user balance" });
-        }
 
-        const wallet = result[0].user_balance;
-        if (wallet < amount) {
-          console.error("Insufficient wallet balance");
-          return res
-            .status(404)
-            .json({ message: "Insufficient wallet balance" });
-        }
-        const newBalance = wallet - amount;
-        const userId = req.user.id;
+      //Deduct payment
+      db.execute(
+        `SELECT user_balance FROM users WHERE d_id = ?`,
+        [userid],
+        (err, result) => {
+          if (err || result.length === 0) {
+            console.error("Error slecting user balance");
+            return res
+              .status(500)
+              .json({ message: "Error slecting user balance" });
+          }
 
-        if (amount > 3000) {
-          console.log("Froud Alert, Amount > 3k");
-          // Alert Admin of the transaction
-          transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: 'tunstelecom.com.ng@gmail.com',
-            subject: "Froud Alert!",
-            html: `<p>A User with <b>ID: ${userId} </b>, is trying to purchase Airtime more than 3k </p>`
-          });
+          const wallet = parseFloat(result[0].user_balance);
+          if (wallet < parseFloat(amount)) {
+            console.error("Insufficient wallet balance");
+            return res
+              .status(404)
+              .json({ message: "Insufficient wallet balance" });
+          }
+          const newBalance = wallet - parseFloat(amount);
+          const userId = req.user.id;
 
-          const isban = 'true';
-          const ban = `UPDATE users SET isban = ? WHERE d_id = ?`;
-          db.execute(ban, [isban, userId], (err, result) => {
-            if (err) {
-              console.error(`Faild to ban User with ID: ${userId}`, err.message);
-              return res.status(503).json({ message: 'Forbidden' });
-            } else {
-              console.log(`User ID: ${userId} Banned`)
-              return res.status(403).json({ message: 'Transaction cannot be processed' });
-            }
-          });
-          return;
-        }
+          if (parseFloat(amount) > 3000) {
+            console.log("Froud Alert, Amount > 3k");
+            // Alert Admin of the transaction
+            transporter.sendMail({
+              from: process.env.EMAIL_USER,
+              to: 'tunstelecom.com.ng@gmail.com',
+              subject: "Froud Alert!",
+              html: `<p>A User with <b>ID: ${userId} </b>, is trying to purchase Airtime more than 3k </p>`
+            });
 
-        db.execute(
-          `UPDATE users SET user_balance = ? WHERE d_id = ?`,
-          [newBalance, userid],
-          (err, result) => {
-            if (err) {
-              console.error("Failed to deduct user wallet for airtime");
-              return res
-                .status(500)
-                .json({ message: "Failed to deduct user wallet for airtime" });
-            }
-            db.execute(
-              `UPDATE users SET prev_balance = ? WHERE d_id = ?`,
-              [wallet, userid],
-              (err, result) => {
-                if (err) {
-                  console.error("Failed to set previoud balance");
-                  return res
-                    .status(500)
-                    .json({ message: "Failed to set previoud balance" });
-                }
+            const isban = 'true';
+            const ban = `UPDATE users SET isban = ? WHERE d_id = ?`;
+            db.execute(ban, [isban, userId], (err, result) => {
+              if (err) {
+                console.error(`Faild to ban User with ID: ${userId}`, err.message);
+                return res.status(503).json({ message: 'Forbidden' });
+              } else {
+                console.log(`User ID: ${userId} Banned`)
+                return res.status(403).json({ message: 'Transaction cannot be processed' });
+              }
+            });
+            return;
+          }
 
-                if (
-                  response.data.status === "failed" ||
-                  response.data.status === "Failed"
-                ) {
-                  db.execute(
-                    `UPDATE users SET user_balance = ? WHERE d_id = ?`,
-                    [wallet, userid],
-                    async (err, result) => {
-                      if (err) {
-                        console.error("Failed to refund user");
+          db.execute(
+            `UPDATE users SET user_balance = ? WHERE d_id = ?`,
+            [newBalance, userid],
+            (err, result) => {
+              if (err) {
+                console.error("Failed to deduct user wallet for airtime");
+                return res
+                  .status(500)
+                  .json({ message: "Failed to deduct user wallet for airtime" });
+              }
+              db.execute(
+                `UPDATE users SET prev_balance = ? WHERE d_id = ?`,
+                [wallet, userid],
+                async (err, result) => {
+                  if (err) {
+                    console.error("Failed to set previoud balance");
+                    return res
+                      .status(500)
+                      .json({ message: "Failed to set previoud balance" });
+                  }
+
+
+                  ////External API
+                  const response = await axios.post(
+                    api_url,
+                    airtimeBody,
+                    { headers }
+                  );
+
+                  const status = response.data.status?? response.data.Status;
+
+                  if (
+                    status === "failed" ||
+                    status === "Failed" ||
+                    status === "Fail" ||
+                    status === "fail" ||
+                    status >= 400
+                  ) {
+                    db.execute(
+                      `UPDATE users SET user_balance = ? WHERE d_id = ?`,
+                      [wallet, userid],
+                      async (err, result) => {
+                        if (err) {
+                          console.error("Failed to refund user");
+                        }
+                        console.log("User refunded");
                       }
-                      console.log("User refunded");
+                    );
+                  } else {
+                    console.log("Transaction successful");
+                  }
+
+                  const hist = `INSERT INTO airtimeHist(id, network, amount, phone_number, previous_balance, new_balance, time, status, airtimeType) VALUES(?, ?, ?, ?, ?, ?, NOW(), ?, ?)`;
+                  db.execute(
+                    hist,
+                    [
+                      userid,
+                      airtimeNChoosen,
+                      parseFloat(amount),
+                      mobileN,
+                      wallet,
+                      newBalance,
+                      status,
+                      airtimeTChoosen,
+                    ],
+                    (err, result) => {
+                      if (err) {
+                        console.log(
+                          "Failed to insert airtime transaction history",
+                          err.message
+                        );
+                        return res
+                          .status(500)
+                          .json({
+                            message:
+                              "Failed to insert airtime transaction history",
+                          });
+                      }
+
+                      res.status(200).json(response.data);
                     }
                   );
-                } else {
-                  console.log("Transaction successful");
                 }
-
-                const status =
-                  response.data.Status;
-
-                const hist = `INSERT INTO airtimeHist(id, network, amount, phone_number, previous_balance, new_balance, time, status, airtimeType) VALUES(?, ?, ?, ?, ?, ?, NOW(), ?, ?)`;
-                db.execute(
-                  hist,
-                  [
-                    userid,
-                    airtimeNChoosen,
-                    amount,
-                    mobileN,
-                    wallet,
-                    newBalance,
-                    status,
-                    airtimeTChoosen,
-                  ],
-                  (err, result) => {
-                    if (err) {
-                      console.log(
-                        "Failed to insert airtime transaction history",
-                        err.message
-                      );
-                      return res
-                        .status(500)
-                        .json({
-                          message:
-                            "Failed to insert airtime transaction history",
-                        });
-                    }
-
-                    res.status(200).json(response.data);
-                  }
-                );
-              }
-            );
-          }
-        );
-      }
-    );
-  });
+              );
+            }
+          );
+        }
+      );
+    });
   } catch (err) {
     console.error(err.response?.data || err.message);
     res

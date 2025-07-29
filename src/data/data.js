@@ -349,14 +349,14 @@ router.post("/purchase/bundle", async (req, res) => {
                             .json({ message: "Error slecting user balance" });
                         }
 
-                        const wallet = result[0].user_balance;
-                        if (wallet < DataPrice) {
+                        const wallet = parseFloat(result[0].user_balance);
+                        if (wallet < parseFloat(DataPrice)) {
                           console.error("Insufficient wallet balance");
                           return res
                             .status(404)
                             .json({ message: "Insufficient wallet balance" });
                         }
-                        const newBalance = wallet - DataPrice;
+                        const newBalance = wallet - parseFloat(DataPrice);
 
                         //Deduct user
                         db.execute(
@@ -430,7 +430,7 @@ router.post("/purchase/bundle", async (req, res) => {
                                     userId,
                                     plan,
                                     mobileNumber,
-                                    DataPrice,
+                                    parseFloat(DataPrice),
                                     wallet,
                                     newBalance,
                                     status,
@@ -450,7 +450,7 @@ router.post("/purchase/bundle", async (req, res) => {
                                     }
 
                                     // reward user with cashback
-                                    const cashBack = (0.2 / 100) * DataPrice;
+                                    const cashBack = (0.2 / 100) * parseFloat(DataPrice);
                                     await prisma.users.update({
                                       where: { d_id: userId }, data: {
                                         cashback:
