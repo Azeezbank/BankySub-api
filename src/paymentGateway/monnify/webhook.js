@@ -108,15 +108,17 @@ router.post("/", async (req, res) => {
                   const refer = await prisma.users.findUnique({ where: { username: referral } });
                   if (!refer) {
                     console.log('No referral found');
+                  } else if (refer.username === referral) {
+                    console.log('You cant refer yourself');
                   } else {
-                  await prisma.users.update({
-                    where: { username: referral },
-                    data: {
-                      cashback: { increment: referralBonus },
-                      isFund: 'true'
-                    }
-                  });
-                }
+                    await prisma.users.update({
+                      where: { username: referral },
+                      data: {
+                        cashback: { increment: referralBonus },
+                        isFund: 'true'
+                      }
+                    });
+                  }
                 }
 
                 res
