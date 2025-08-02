@@ -82,7 +82,7 @@ router.get("/details", async (req, res) => {
 router.get("/dashboard/message", async (req, res) => {
   try {
     const message = await prisma.admin_setting.findMany({
-      select: { hatsapp_link: true, dash_message: true }
+      select: { whatsapp_link: true, dash_message: true }
     });
 
     if (!message || message.length === 0) {
