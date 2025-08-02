@@ -81,7 +81,7 @@ router.get("/details", async (req, res) => {
 //Fetch dashbord message
 router.get("/dashboard/message", async (req, res) => {
   try {
-    const message = await prisma.admin_setting.findMany({
+    const message = await prisma.admin_setting.findFirst({
       select: { whatsapp_link: true, dash_message: true }
     });
 
