@@ -47,8 +47,8 @@ model dataTransactionHist {
   plan           String?   @db.VarChar(255)
   phone_number   String?   @db.VarChar(20)
   amount         String?   @db.VarChar(20)
-  balance_before String?   @db.VarChar(20)
-  balance_after  String?   @db.VarChar(20)
+  balance_before Decimal  @db.Decimal(10, 2) @default(0.00)
+  balance_after  Decimal  @db.Decimal(10, 2) @default(0.00)
   status         String?   @db.VarChar(20)
   time           DateTime? @db.DateTime(0)
 }
@@ -56,21 +56,21 @@ model dataTransactionHist {
 model data_plans {
   d_id         Int                   @id @default(autoincrement())
   id           Int?
-  name         String?               @db.VarChar(20)
-  network_name String?               @db.VarChar(10)
-  data_type    String?               @db.VarChar(25)
-  validity     String?               @db.VarChar(15)
+  name         String?               @db.VarChar(100)
+  network_name String?               @db.VarChar(100)
+  data_type    String?               @db.VarChar(100)
+  validity     String?               @db.VarChar(255)
   is_active    data_plans_is_active? @default(active)
-  USER         Int?
-  RESELLER     Int?
-  API          Int?
+  USER         Decimal  @db.Decimal(10, 2) @default(0.00)
+  RESELLER     Decimal  @db.Decimal(10, 2) @default(0.00)
+  API          Decimal  @db.Decimal(10, 2) @default(0.00)
 }
 
 model data_types {
   d_id         Int                   @id @default(autoincrement())
-  name         String?               @db.VarChar(20)
+  name         String?               @db.VarChar(255)
   is_active    data_types_is_active? @default(active)
-  network_name String?               @db.VarChar(15)
+  network_name String?               @db.VarChar(255)
 }
 
 model env {
@@ -93,11 +93,11 @@ model paymentHist {
   event_type     String?   @db.VarChar(100)
   payment_ref    String?   @db.VarChar(255)
   paid_on        DateTime? @db.DateTime(0)
-  amount         Int?
+  amount         Decimal  @db.Decimal(10, 2) @default(0.00)
   payment_method String?   @db.VarChar(255)
   payment_status String?   @db.VarChar(50)
-  prev_balance   Int?
-  user_balance   Int?
+  prev_balance   Decimal  @db.Decimal(10, 2) @default(0.00)
+  user_balance   Decimal  @db.Decimal(10, 2) @default(0.00)
 }
 
 model transactionWebHook {
@@ -113,7 +113,7 @@ model userBankDetails1 {
   acctName  String?                     @db.VarChar(255)
   bankName  String?                     @db.VarChar(255)
   is_active userBankDetails1_is_active? @default(active)
-  acct_id   Int?
+  acct_id   String
 }
 
 model users {
@@ -122,8 +122,8 @@ model users {
   user_pass       String           @db.VarChar(255)
   user_email      String           @db.VarChar(100)                 @unique
   user_registered DateTime?         @default(now())                 @db.Timestamp(0)
-  prev_balance    Int              @default(0)
-  user_balance    Int               @default(0)
+  prev_balance    Decimal           @db.Decimal(10, 2)        @default(0.00)
+  user_balance    Decimal           @db.Decimal(10, 2)        @default(0.00)
   packages        users_packages?   @default(USER)
   Pin             Int               @default(0)
   Phone_number    String?           @db.VarChar(15)
@@ -135,9 +135,58 @@ model users {
   isban           String            @default("false")
   referral        String?
   isFund          String            @default("false")
-  cashback        Int               @default(0)
+  cashback        Decimal  @db.Decimal(10, 2) @default(0.00)
   referree        Int               @default(0)
 
+}
+
+model cable {
+  d_id             Int       @id @default(autoincrement())
+  id               Int
+  provider         String
+  is_active cable_is_active? @default(active)
+}
+
+model cablePlan {
+  d_id     Int    @id @default(autoincrement())
+  id       Int
+  provider       String
+  cable_name     String
+  user_price        Decimal  @db.Decimal(10, 2) @default(0.00)
+  reseller_price    Decimal  @db.Decimal(10, 2) @default(0.00)
+  api_price         Decimal  @db.Decimal(10, 2) @default(0.00)
+  is_active cableplan_is_active? @default(active)
+}
+
+model cablenumber {
+  d_id    Int  @id @default(autoincrement())
+  number  String
+  is_active cablenumber_is_active? @default(active)
+}
+
+model cableHist {
+  d_id         Int    @id    @default(autoincrement())
+  id           Int
+  providername      String
+  cable_name        String
+  amount            Decimal  @db.Decimal(10, 2)  @default(0.00)
+  customerName      String
+  createdAt         DateTime      @default(now())
+}
+
+enum cablenumber_is_active {
+  active
+  disabled
+}
+
+enum cableplan_is_active {
+  active
+  disabled
+}
+
+enum cable_is_active {
+  active
+  disabled
 }
 
 enum AirtimeN_is_active {

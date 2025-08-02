@@ -105,7 +105,7 @@ router.post("/", async (req, res) => {
                 const referralBonus = (referralPercentage / 100) * netAmount;
 
                 if (isFund === 'false') {
-                  const refer = await prisma.users.findUnique({ where: { username: referral } });
+                  const refer = await prisma.users.findFirst({ where: { username: referral } });
                   if (!refer) {
                     console.log('No referral found');
                   } else if (refer.username === referral) {

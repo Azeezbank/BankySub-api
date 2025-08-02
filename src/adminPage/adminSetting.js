@@ -1,8 +1,10 @@
 import express from "express";
 import db from '../config/database.js';
 import dotenv from 'dotenv';
+import { PrismaClient } from "@prisma/client";
 dotenv.config();
 const router = express.Router();
+const prisma = new PrismaClient();
 
 //setting details table
 // const sql = `CREATE TABLE IF NOT EXISTS admin_setting(d_id INT PRIMARY KEY AUTO_INCREMENT, whatsapp_phone VARCHAR(15), whatsapp_number VARCHAR(255), whatsapp_link VARCHAR(255), dash_message TEXT)`;
@@ -55,34 +57,43 @@ router.put("/details/updated/setting", async (req, res) => {
 
 
 //Fetch admin setting details
-router.get("/details", (req, res) => {
-  db.execute(
-    `SELECT whatsapp_phone, whatsapp_number, whatsapp_link, dash_message FROM admin_setting`,
-    (err, result) => {
-      if (err) {
-        console.log("Error selecting admin details", err);
-        return res
-          .status(500)
-          .json({ message: "Error selecting admin details" });
+router.get("/details", async (req, res) => {
+
+  try {
+    const details = await prisma.admin_setting.findMany({
+      select: {
+        whatsapp_phone: true, whatsapp_number: true, whatsapp_link: true, dash_message: true
       }
-      res.status(200).json(result[0]);
+    });
+
+    if (!details || details.length === 0) {
+      return res.status(404).json({ message: "Error selecting admin details" });
     }
-  );
+
+    res.status(200).json(details);
+  } catch (err) {
+    console.error('Failed to select setting detrails', err);
+    return res.status(500).json({ message: 'Failed to select setting detrails' });
+  }
 });
 
 
 //Fetch dashbord message
-router.get("/dashboard/message", (req, res) => {
-  const sql = `SELECT whatsapp_link, dash_message FROM admin_setting`;
-  db.query(sql, (err, result) => {
-    if (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .json({ message: "Error fetching dashboard message" });
+router.get("/dashboard/message", async (req, res) => {
+  try {
+    const message = await prisma.admin_setting.findMany({
+      select: { hatsapp_link: true, dash_message: true }
+    });
+
+    if (!message || message.length === 0) {
+      return res.status(404).json({ message: "Error fetching dashboard message" });
     }
-    res.status(200).json(result[0]);
-  });
+
+    res.status(200).json(message);
+  } catch (err) {
+    console.error("Error fetching dashboard message:", err);
+    res.status(500).json({ message: "Server error while fetching dashboard message" });
+  }
 });
 
 export default router;

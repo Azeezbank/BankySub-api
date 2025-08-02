@@ -21,7 +21,7 @@ import  env  from './adminPage/env.js';
 import { swaggerSpec } from './config/swagger/swagger.js';
 import swaggerUi from 'swagger-ui-express'
 import plan from './data/data.js';
-import db from './config/database.js';
+import cable from './cable/Cable.js';
 
 
 const port = process.env.PORT || 3006;
@@ -41,16 +41,13 @@ app.get('/swagger.json', (req, res) => {
   res.send(swaggerSpec);
 });
 
-db.execute(`ALTER TABLE paymentHist MODIFY COLUMN user_balance DECIMAL(10, 2) DEFAULT 0.00`, (err, result) => {
-  if (err) throw err;
-  console.log('updated')
-});
 
 app.use('/api/auth', auth);
 app.use('/api/data/network', authenticateToken, network);
 app.use('/api/protected', authenticateToken, protectedRoutes);
 app.use('/api/data', authenticateToken, data);
 app.use('/api/airtime', authenticateToken, airtime);
+app.use('api/cable', authenticateToken, cable);
 app.use('/api/monnify/webhook', monnifyWebhook);
 app.use('/api/user', authenticateToken, user);
 app.use('/api/payment/history', authenticateToken, history);

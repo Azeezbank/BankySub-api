@@ -6,31 +6,10 @@ import { decrypt } from "../uttilis/encrypt.js";
 dotenv.config();
 const router = express.Router();
 
-//Airtime section
-//Create Airtime network table
-// const sql = `CREATE TABLE IF NOT EXISTS AirtimeN(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active', id INT)`;
-// db.execute(sql, (err, result) => {
-//   if (err) throw err;
-//   console.log("Airtime network Table created");
-// });
-
 //Insert into Airtime network table
 // db.query(`INSERT INTO AirtimeN(name, id) VALUES('MTN', 1), ('GLO', 2), ('AIRTEL', 4)`, (err, result) => {
 //   if (err) throw err;
 //   console.log('Inserted');
-// });
-
-//Create Airtime type table
-// const AirtimeT = `CREATE TABLE IF NOT EXISTS AirtimeT(d_id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`;
-// db.execute(AirtimeT, (err, result) => {
-//   if (err) throw err;
-//   console.log("Airtime Type Table created");
-// });
-
-//Create Airtime history table
-// db.execute(`CREATE TABLE IF NOT EXISTS airtimeHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, network VARCHAR(15), amount VARCHAR(15), phone_number VARCHAR(20), previous_balance VARCHAR(15), new_balance VARCHAR(15), time DATETIME, status VARCHAR(15)), airtimeType VARCHAR(20)`, (err, res) => {
-//   if (err) throw err;
-//   console.log('airtime record table created')
 // });
 
 // db.execute(`ALTER TABLE airtimeHist ADD airtimeType VARCHAR(20)`, (err, result) => {
@@ -87,7 +66,7 @@ router.post("/topup", async (req, res) => {
   try {
     db.query(`SELECT api_key, api_url FROM env WHERE service_type = ?`, [airtimeTChoosen], async (err, apiDoc) => {
       if (err) {
-        console.error('Failed to select api details.', err.message);
+        console.error('Failed to select api details.', err);
         return;
       }
 

@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import db from "../config/database.js";
 import transporter from "../config/mailer.js";
-import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import JWT from "jsonwebtoken";
 const prisma = new PrismaClient();
 
@@ -15,33 +15,23 @@ dotenv.config();
 //Route to register user
 router.post("/register", async (req, res) => {
   const { password, username, email, phone, fullName, referralUsername } = req.body;
-console.log('working');
-  db.query(
-    `SELECT * FROM users WHERE user_email = ? || username = ?`,
-    [email, username],
-    async (err, result) => {
-      if (err) {
-        console.error("Error checking user", err);
-        return res.status(500).json({ message: "Error checking user" });
-      }
-      if (result.length > 0) {
+  try {
+      const user = await prisma.users.findFirst({ where: {
+        OR: [
+          {user_email: email }, {username: username}
+        ]
+      }});
+
+      if (!user) {
         return res.status(400).json({ message: "User already exists" });
       }
 
-      try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-        const sql = `INSERT INTO users (user_pass, username, user_email, Phone_number, verificationOTP, fullName, referral) VALUES (?, ?, ?, ?, ?, ?, ?);`;
-
-        db.query(
-          sql,
-          [hashedPassword, username, email, phone, verificationCode, fullName, referralUsername],
-          async (err, result) => {
-            if (err) {
-              console.error("Error registering user", err);
-              return res.status(401).json({ message: "Error inserting user" });
-            }
+            await prisma.users.create({ data: {
+              user_pass: hashedPassword, username: username, user_email: email, Phone_number: phone, verificationOTP: verificationCode, fullName: fullName, referral: referralUsername}
+            });
 
             // Send email
             await transporter.sendMail({
@@ -51,25 +41,20 @@ console.log('working');
               html: `<p>Your verification code is <b>${verificationCode}</b></p>`,
             });
 
-            return res
-              .status(200)
-              .json({ message: "User registered successfully, verification code has been sent to your mail" });
-          }
-        );
+            return res.status(200).json({ message: "User registered successfully, verification code has been sent to your mail" });
       } catch (hashError) {
-        console.error("Error hashing password", hashError);
+        console.error("Error registering user", hashError);
         return res.status(500).json({ message: "Error processing request" });
       }
     }
   );
-});
 
 
 //Verify user mail
 router.post('/verify/mail', (req, res) => {
   const { otp } = req.body;
   const sql = `SELECT verificationOTP, username, referral FROM users WHERE verificationOTP = ?`;
-  db.query(sql, [otp], (err, result) => {
+  db.query(sql, [otp], async (err, result) => {
     if (err || result.length === 0 || result[0].verificationOTP !== otp) {
       console.error('Invalid Verification Code', err);
       return res.status(404).json({ message: 'Invalid Verification Code, Please input valid verification code' });
@@ -77,14 +62,15 @@ router.post('/verify/mail', (req, res) => {
 
     const { username, referral } = result[0];
 
-    const sql2 = `UPDATE users SET isverified = 'true' WHERE verificationOTP = ?`;
-    db.execute(sql2, [otp], async (err, updateUser) => {
-      if (err) {
-        console.error('Failed to verify user', err);
-        return res.status(500).json({ message: 'Failed to verify user' });
+      await prisma.users.update({ where: {verificationOTP: otp}, data: {isverified: 'true'}});
+
+      const isReferal = await prisma.users.findFirst({ where: { referral: referral } });
+
+      if (isReferal) {
+        await prisma.users.update({ where: { username: referral.trim() }, data: { referree: { increment: 1 } } });
+      } else {
+        console.log('No referral found');
       }
-      
-      await prisma.users.update({where: {username: referral }, data: {referree: {increment: 1}}});
 
       // Send email
       await transporter.sendMail({
@@ -97,7 +83,6 @@ router.post('/verify/mail', (req, res) => {
       res.status(200).json({ message: 'User Verified Successfully' });
     });
   });
-});
 
 //user login
 router.post("/login", (req, res) => {
