@@ -37,8 +37,6 @@ router.post('/plan', async (req, res) => {
             where: {
                 d_id: userId,
             }, select: {
-                d_id: true,
-                id: true,
                 packages: true
             }
         });
@@ -62,13 +60,16 @@ router.post('/plan', async (req, res) => {
             console.log('No package found')
         };
 
+         // Build select object dynamically
+        const selectFields = {
+            d_id: true,
+            cable_name: true,
+            [price]: true
+        };
+
         const plan = await prisma.cablePlan.findMany({
-            where: { is_active: 'active', provider: provider },
-            select: {
-                d_id: true,
-                cable_name: true,
-                [price]: true,
-            }
+            where: { is_active: 'active', id: parseInt(provider) },
+            select: {selectFields}
         });
 
         res.status(200).json(plan);
