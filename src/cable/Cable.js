@@ -2,6 +2,7 @@ import express from 'express';
 import axios from 'axios';
 import { PrismaClient } from '@prisma/client';
 import { decrypt } from '../uttilis/encrypt.js';
+import transporter from '../config/mailer.js';
 const prisma = new PrismaClient();
 const router = express.Router();
 
@@ -29,7 +30,7 @@ router.get('/provider', async (req, res) => {
 
 //Fetch cable plans
 router.post('/plan', async (req, res) => {
-    const provider = req.body.provider;
+    const providerName = req.body.providerName;
     const userId = req.user.id;
 
     try {
@@ -63,13 +64,14 @@ router.post('/plan', async (req, res) => {
          // Build select object dynamically
         const selectFields = {
             d_id: true,
+            id: true,
             cable_name: true,
             [price]: true
         };
 
         const plan = await prisma.cablePlan.findMany({
-            where: { is_active: 'active', id: parseInt(provider) },
-            select: {selectFields}
+            where: { is_active: 'active', provider: parseInt(providerName) },
+            select: selectFields
         });
 
         res.status(200).json(plan);
@@ -81,7 +83,7 @@ router.post('/plan', async (req, res) => {
 
 //Purchase Cable subscription
 router.post('/subscription', async (req, res) => {
-    const { provider, cable_name, amount, number, customerName } = req.body;
+    const { providerId, cable_planId, cable_name, amount, number, customerName, providerName, customerMail } = req.body;
     const userId = req.user.id;
     try {
         const user = await prisma.users.findUnique({ where: {
@@ -102,9 +104,9 @@ router.post('/subscription', async (req, res) => {
 
         //Request Number
         const requestBody = {
-            cable_id: provider,
+            cable_id: providerId,
             cable_number: number,
-            cable_plan: cable_name,
+            cable_plan: cable_planId,
             bypass: true
         };
 
@@ -125,17 +127,40 @@ router.post('/subscription', async (req, res) => {
         }
 
         //Insert into cable history
-        await prisma.cableHist.create({ data: {id: userId, providername: provider, cable_name: cable_name, amount: amount, customerName: customerName}});
+        await prisma.cableHist.create({ data: {id: userId, providername: providerName, cable_name: cable_name, amount: amount, customerName: customerName}});
         
         //Reward with cashback
         const cashback = (0.2 / 100) * amount;
 
         await prisma.users.update({ where: {d_id: userId}, data: {cashback: {increment: cashback}}});
 
+        // Send email
+        if (customerMail) {
+            await transporter.sendMail({
+              from: customerMail,
+              to: email,
+              subject: "Cable Transaction",
+              html: `<p>You have successfully subcribed for ${providerName} ${cable_name}. Thanks.</b></p>`,
+            });
+        }
+
         res.status(200).json({message: 'Cable subscription Successful'})
     } catch (err) {
         console.error('Cable subscription Failed', err);
         return res.status(500).json({message: 'Something went wrong'})
+    }
+});
+
+//validate cable IUC/Number
+router.post('/verify/iuc', async (req, res) => {
+    const {  providerId, number } = req.body;
+    try {
+        const userIdentity = await axios.get(`https://ncwallet.ng/api/cable/cable-validation?cable_id=${providerId}&cable_number=${number}`);
+        const iuc = userIdentity.data;
+        res.status(200).json(iuc);
+    } catch (err) {
+        console.log('Failed to verify user Identity', err);
+        return res.status(500).json({ message: 'Something went wrong, failed to verify user Identity'})
     }
 });
 
