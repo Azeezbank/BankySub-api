@@ -28,4 +28,31 @@ router.get("/", (req, res) => {
   });
 });
 
+
+// fetch payment history for individual
+router.get("/user", (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+  const userId = req.user.id;
+
+  const countQuery = "SELECT COUNT(*) AS total FROM paymentHist";
+  const dataQuery = "SELECT * FROM paymentHist WHERE id = ? ORDER BY paid_on DESC LIMIT ? OFFSET ?";
+
+  db.query(countQuery, (err, countResult) => {
+    if (err) return res.status(500).json({ message: "Server Error" });
+    const total = countResult[0].total;
+    db.query(dataQuery, [userId, limit, offset], (err, dataResult) => {
+      if (err) return res.status(500).json({ message: "Server Error" });
+      res.json({
+        total,
+        page,
+        limit,
+        totalPage: Math.ceil(total / limit),
+        data: dataResult,
+      });
+    });
+  });
+});
+
 export default router;
