@@ -52,6 +52,12 @@ router.post("/", async (req, res) => {
   const netAmount = amountPaid - charges;
 
   try {
+
+    const paymentExists = await prisma.paymentHist.findFirst({where: { payment_ref: paymentRef }});
+    if (paymentExists) {
+      return res.status(200).json({ message: "Payment already processed" });
+    }
+
     db.query(
       `SELECT user_balance, isFund, referral FROM users WHERE d_id = ?`,
       [userid],
