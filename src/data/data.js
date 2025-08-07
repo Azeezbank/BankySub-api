@@ -457,7 +457,7 @@ router.post("/purchase/bundle", async (req, res) => {
                                           { increment: cashBack }
                                       }
                                     });
-                                    res.status(200).json(response.data);
+                                    res.status(200).json({ message: "Data purchase successful"});
                                   }
                                 );
                               }
