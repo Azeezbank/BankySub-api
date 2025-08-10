@@ -239,18 +239,14 @@ router.post("/purchase/bundle", async (req, res) => {
   const { plan, DataPrice, mobileNumber, choosenNetwork, choosenDataType } =
     req.body;
   const userId = req.user.id;
+
   try {
-    db.query(
-      `SELECT packages FROM users WHERE d_id = ?`,
-      [userId],
-      async (err, userPack) => {
-        if (err) {
-          console.error("Error selecting user packages", err);
-          return res
-            .status(500)
-            .json({ message: "Error selecting user packages" });
+        const user = await prisma.users.findFirst({ where: {d_id: userId}, select: { packages: true, user_balance: true} });
+        if (!user) {
+          console.log('Error selecting user packages');
+          return;
         }
-        const userPackage = userPack[0].packages;
+        const userPackage = user.packages;
 
         let price = "";
         if (userPackage === "USER") {
@@ -264,226 +260,258 @@ router.post("/purchase/bundle", async (req, res) => {
           return;
         }
 
-        const sql = `SELECT * FROM data_plans WHERE network_name = ? AND data_type = ? AND ${price} = ? AND is_active = 'active'`;
-        db.query(
-          sql,
-          [choosenNetwork, choosenDataType, DataPrice],
-          async (err, result) => {
-            if (err) {
-              console.error(err);
-              return res.status(500).json({ error: "Data query error" });
-            }
-            if (result.length === 0) {
-              console.log("Plan not found");
-              return res.status(404).json({ error: "Plan not found" });
-            }
-            db.query(
-              `SELECT id FROM networks WHERE name = ?`,
-              [choosenNetwork],
-              async (err, results) => {
-                if (err) {
-                  console.log("Field to select network", err);
-                  return res
-                    .status(500)
-                    .json({ message: "Field to select network" });
-                }
-                const networkId = results[0].id;
-                console.log("This is network id", networkId);
-                const id = result[0].id;
+        const filter = {
+          network_name: choosenNetwork,
+          data_type: choosenDataType,
+          is_active: 'active'
+        };
+        filter[price] = DataPrice;
 
-                // modify network id for nc wallet using data share
-                let ncNetworkId = null;
-                if (networkId === 1) {
-                  ncNetworkId = 1
-                } else if (networkId === 4) {
-                  ncNetworkId = 2
-                } else if (networkId === 2) {
-                  ncNetworkId = 3
-                } else if (networkId === 3) {
-                  ncNetworkId = 4
-                }
+        // const sql = `SELECT * FROM data_plans WHERE network_name = ? AND data_type = ? AND ${price} = ? AND is_active = 'active'`;
+        // db.query(
+        //   sql,
+        //   [choosenNetwork, choosenDataType, DataPrice],
+        //   async (err, result) => {
+        //     if (err) {
+        //       console.error(err);
+        //       return res.status(500).json({ error: "Data query error" });
+        //     }
 
-                //nc wallet body
-                const ncRequestBody = {
-                  network: ncNetworkId,
-                  phone_number: mobileNumber,
-                  data_plan: id,
-                  bypass: true,
-                }
+        //     if (result.length === 0) {
+        //       console.log("Plan not found");
+        //       return res.status(404).json({ error: "Plan not found" });
+        //     }
 
-                const requestBody = {
-                  network: networkId,
-                  mobile_number: mobileNumber,
-                  plan: id,
-                  Ported_number: true,
-                };
+        const plans = await prisma.data_plans.findMany({ where: filter });
+        if (!plans || plans.length === 0) {
+          console.log('Failed to select plan');
+          return;
+        }
 
-                db.query(`SELECT api_key, api_url FROM env WHERE service_type = ?`, [choosenDataType], async (err, apiDocs) => {
-                  if (err) {
-                    console.error('Failed to select api details.', err.message);
-                    return;
-                  }
+        const id = plans[0].id;
 
-                  if (!apiDocs || apiDocs.length === 0) {
-                    console.error("No API found for the given service type.");
-                    return;
-                  }
-                  const { api_key, api_url } = apiDocs[0];
-                  const decryptKey = decrypt(api_key);
+        // db.query(
+        //   `SELECT id FROM networks WHERE name = ?`,
+        //   [choosenNetwork],
+        //   async (err, results) => {
+        //     if (err) {
+        //       console.log("Field to select network", err);
+        //       return res
+        //         .status(500)
+        //         .json({ message: "Field to select network" });
+        //     }
 
-                  let headers = {
-                    Authorization: decryptKey,
-                    "Content-Type": "application/json"
-                  };
+        const results = await prisma.networks.findFirst({ where: { name: choosenNetwork }, select: { id: true } });
+        if (!results) {
+          console.log("Field to select network")
+          return;
+        }
 
-                  try {
-                    //Deduct payment
-                    db.execute(
-                      `SELECT user_balance FROM users WHERE d_id = ?`,
-                      [userId],
-                      (err, result) => {
-                        if (err || result.length === 0) {
-                          console.error("Error slecting user balance");
-                          return res
-                            .status(500)
-                            .json({ message: "Error slecting user balance" });
-                        }
+        const networkId = results.id;
+        
 
-                        const wallet = parseFloat(result[0].user_balance);
-                        if (wallet < parseFloat(DataPrice)) {
-                          console.error("Insufficient wallet balance");
-                          return res
-                            .status(404)
-                            .json({ message: "Insufficient wallet balance" });
-                        }
-                        const newBalance = wallet - parseFloat(DataPrice);
+        // modify network id for nc wallet using data share
+        let ncNetworkId = null;
+        if (networkId === 1) {
+          ncNetworkId = 1
+        } else if (networkId === 4) {
+          ncNetworkId = 2
+        } else if (networkId === 2) {
+          ncNetworkId = 3
+        } else if (networkId === 3) {
+          ncNetworkId = 4
+        }
 
-                        //Deduct user
-                        db.execute(
-                          `UPDATE users SET user_balance = ? WHERE d_id = ?`,
-                          [newBalance, userId],
-                          (err, result) => {
-                            if (err) {
-                              console.error(
-                                "Failed to deduct user wallet for Data"
-                              );
-                              return res.status(500).json({
-                                message: "Failed to deduct user wallet for Data",
-                              });
-                            }
+        //nc wallet body
+        const ncRequestBody = {
+          network: ncNetworkId,
+          phone_number: mobileNumber,
+          data_plan: id,
+          bypass: true,
+        }
 
-                            db.execute(
-                              `UPDATE users SET prev_balance = ? WHERE d_id = ?`,
-                              [wallet, userId],
-                              async (err, result) => {
-                                if (err) {
-                                  console.error("Failed to set previous balance");
-                                  return res.status(500).json({
-                                    message: "Failed to set previous balance",
-                                  });
-                                }
+        const requestBody = {
+          network: networkId,
+          mobile_number: mobileNumber,
+          plan: id,
+          Ported_number: true,
+        };
 
+        // db.query(`SELECT api_key, api_url FROM env WHERE service_type = ?`, [choosenDataType], async (err, apiDocs) => {
+        //   if (err) {
+        //     console.error('Failed to select api details.', err.message);
+        //     return;
+        //   }
 
-                                //choose api call for ncwallet and msorg
-                                let response;
-                                //nc wallet
-                                if (choosenDataType === 'DATA SHARE') {
-                                  response = await axios.post(api_url, ncRequestBody, {
-                                    headers,
-                                  });
-                                } else {
+        const apiDocs = await prisma.env.findFirst({ where: { service_type: choosenDataType }, select: {api_key: true, api_url: true} });
 
-                                  //msorg
-                                  response = await axios.post(api_url, requestBody, {
-                                    headers,
-                                  });
-                                }
+        if (!apiDocs) {
+          console.error("No API found for the given service type.");
+          return;
+        }
+        const { api_key, api_url } = apiDocs;
+        const decryptKey = decrypt(api_key);
 
+        let headers = {
+          Authorization: decryptKey,
+          "Content-Type": "application/json"
+        };
 
-                                const status =
-                                  response.data.Status ?? response.data.status;
+        // try {
+          // db.execute(
+          //   `SELECT user_balance FROM users WHERE d_id = ?`,
+          //   [userId],
+          //   (err, result) => {
+          //     if (err || result.length === 0) {
+          //       console.error("Error slecting user balance");
+          //       return res
+          //         .status(500)
+          //         .json({ message: "Error slecting user balance" });
+          //     }
 
-                                if (status === "failed" || status === "Failed" ||
-                                  status === "Fail" || status === "fail" || status >= 400) {
-                                  return db.execute(
-                                    `UPDATE users SET user_balance = ? WHERE d_id = ?`,
-                                    [wallet, userId],
-                                    (err, result) => {
-                                      if (err) {
-                                        console.error("Failed to refund user");
-                                        return res
-                                          .status(404)
-                                          .json({
-                                            message: "Failed to refund user",
-                                          });
-                                      }
-                                      console.log("User refunded");
-                                      return res.status(500).json({ message: 'Transaction Failed' });
-                                    }
-                                  );
-                                }
-
-                                const dataHist = `INSERT INTO dataTransactionHist(id, plan, phone_number, amount, balance_before, balance_after, status, time) VALUES(?, ?, ?, ?, ?, ?, ?, NOW())`;
-                                db.execute(
-                                  dataHist,
-                                  [
-                                    userId,
-                                    plan,
-                                    mobileNumber,
-                                    parseFloat(DataPrice),
-                                    wallet,
-                                    newBalance,
-                                    status,
-                                  ],
-                                  async (err, result) => {
-                                    if (err) {
-                                      console.log(
-                                        "Failed to insert transaction record",
-                                        err.message
-                                      );
-                                      return res
-                                        .status(500)
-                                        .json({
-                                          message:
-                                            "Failed to insert transaction record",
-                                        });
-                                    }
-
-                                    // reward user with cashback
-                                    const cashBack = (0.2 / 100) * parseFloat(DataPrice);
-                                    await prisma.users.update({
-                                      where: { d_id: userId }, data: {
-                                        cashback:
-                                          { increment: cashBack }
-                                      }
-                                    });
-                                    res.status(200).json({ message: "Data purchase successful"});
-                                  }
-                                );
-                              }
-                            );
-                          }
-                        );
-                      }
-                    );
-                  } catch (err) {
-                    console.error("Failed to fetch from API", err);
-                    res
-                      .status(500)
-                      .json({ error: "Failed to fetch data from external API" });
-                  }
-                });
-              }
-            );
+          const wallet = parseFloat(user.user_balance);
+          if (wallet < parseFloat(DataPrice)) {
+            console.error("Insufficient wallet balance");
+            return res
+              .status(404)
+              .json({ message: "Insufficient wallet balance" });
           }
-        );
-      }
-    );
-  } catch (err) {
-    console.error("Server error", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
+          const newBalance = wallet - parseFloat(DataPrice);
+
+          //Deduct user
+          // db.execute(
+          //   `UPDATE users SET user_balance = ? WHERE d_id = ?`,
+          //   [newBalance, userId],
+          //   async (err, result) => {
+          //     if (err) {
+          //       console.error(
+          //         "Failed to deduct user wallet for Data"
+          //       );
+          //       return res.status(500).json({
+          //         message: "Failed to deduct user wallet for Data",
+          //       });
+          //     }
+          await prisma.users.update({ where: { d_id: userId }, data: { user_balance: newBalance } });
+
+          // db.execute(
+          //   `UPDATE users SET prev_balance = ? WHERE d_id = ?`,
+          //   [wallet, userId],
+          //   async (err, result) => {
+          //     if (err) {
+          //       console.error("Failed to set previous balance");
+          //       return res.status(500).json({
+          //         message: "Failed to set previous balance",
+          //       });
+          //     }
+          await prisma.users.update({ where: { d_id: userId }, data: { prev_balance: wallet } });
+
+
+          //choose api call for ncwallet and msorg
+          let response;
+          //nc wallet
+          if (choosenDataType === 'DATA SHARE') {
+            response = await axios.post(api_url, ncRequestBody, {
+              headers,
+            });
+          } else {
+
+            //msorg
+            response = await axios.post(api_url, requestBody, {
+              headers,
+            });
+          }
+
+
+          const status =
+            response.data.Status ?? response.data.status;
+
+          if (status === "failed" || status === "Failed" ||
+            status === "Fail" || status === "fail" || status >= 400) {
+            // return db.execute(
+            //   `UPDATE users SET user_balance = ? WHERE d_id = ?`,
+            //   [wallet, userId],
+            //   (err, result) => {
+            //     if (err) {
+            //       console.error("Failed to refund user");
+            //       return res
+            //         .status(404)
+            //         .json({
+            //           message: "Failed to refund user",
+            //         });
+            //     }
+            //     console.log("User refunded");
+            //     return res.status(500).json({ message: 'Transaction Failed' });
+            //   }
+            // );
+
+            await prisma.users.update({
+              where: { d_id: userId }, data: {
+                user_balance: wallet
+              }
+            })
+            return;
+          }
+
+          // const dataHist = `INSERT INTO dataTransactionHist(id, plan, phone_number, amount, balance_before, balance_after, status, time) VALUES(?, ?, ?, ?, ?, ?, ?, NOW())`;
+          // db.execute(
+          //   dataHist,
+          //   [
+          //     userId,
+          //     plan,
+          //     mobileNumber,
+          //     parseFloat(DataPrice),
+          //     wallet,
+          //     newBalance,
+          //     status,
+          //   ],
+          //   async (err, result) => {
+          //     if (err) {
+          //       console.log(
+          //         "Failed to insert transaction record",
+          //         err.message
+          //       );
+          //       return res
+          //         .status(500)
+          //         .json({
+          //           message:
+          //             "Failed to insert transaction record",
+          //         });
+          //     }
+          const amount = parseFloat(DataPrice);
+          await prisma.dataTransactionHist.create({
+            data: {
+              id: userId, plan, phone_number: mobileNumber, amount: amount, balance_before: wallet, balance_after: newBalance, status: status
+            }
+          })
+
+          // reward user with cashback
+          const cashBack = (0.2 / 100) * parseFloat(DataPrice);
+          await prisma.users.update({
+            where: { d_id: userId }, data: {
+              cashback:
+                { increment: cashBack }
+            }
+          });
+
+          res.status(200).json({ message: "Data purchase successful" });
+        } catch (err) {
+          console.error("Failed to fetch from API", err);
+          res
+            .status(500)
+            .json({ error: "Failed to fetch data from external API" });
+        }
+      });
+  
+            
+          
+        
+      
+    
+//   } catch (err) {
+//   console.error("Server error", err);
+//   res.status(500).json({ error: "Server error" });
+// }
+
 
 // get data transaction history
 router.get("/history", (req, res) => {

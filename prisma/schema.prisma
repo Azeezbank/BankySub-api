@@ -50,7 +50,7 @@ model dataTransactionHist {
   balance_before Decimal  @db.Decimal(10, 2) @default(0.00)
   balance_after  Decimal  @db.Decimal(10, 2) @default(0.00)
   status         String?   @db.VarChar(20)
-  time           DateTime? @db.DateTime(0)
+  time           DateTime    @default(now())
 }
 
 model data_plans {
