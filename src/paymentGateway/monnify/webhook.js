@@ -2,8 +2,7 @@ import express from "express";
 import db from '../../config/database.js';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import prisma from '../../Prisma.client.js';
 
 dotenv.config();
 const router = express.Router();

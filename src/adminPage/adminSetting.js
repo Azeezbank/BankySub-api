@@ -1,10 +1,9 @@
 import express from "express";
 import db from '../config/database.js';
 import dotenv from 'dotenv';
-import { PrismaClient } from "@prisma/client";
+import prisma from '../Prisma.client.js';
 dotenv.config();
 const router = express.Router();
-const prisma = new PrismaClient();
 
 //setting details table
 // const sql = `CREATE TABLE IF NOT EXISTS admin_setting(d_id INT PRIMARY KEY AUTO_INCREMENT, whatsapp_phone VARCHAR(15), whatsapp_number VARCHAR(255), whatsapp_link VARCHAR(255), dash_message TEXT)`;

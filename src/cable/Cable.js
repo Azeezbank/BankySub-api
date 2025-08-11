@@ -1,9 +1,9 @@
 import express from 'express';
 import axios from 'axios';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../Prisma.client.js';
 import { decrypt } from '../uttilis/encrypt.js';
 import transporter from '../config/mailer.js';
-const prisma = new PrismaClient();
+
 const router = express.Router();
 
 // Fetch Providers

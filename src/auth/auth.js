@@ -3,9 +3,8 @@ import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import db from "../config/database.js";
 import transporter from "../config/mailer.js";
-import { PrismaClient } from "@prisma/client";
+import prisma from '../Prisma.client.js';
 import JWT from "jsonwebtoken";
-const prisma = new PrismaClient();
 
 const router = express.Router();
 dotenv.config();

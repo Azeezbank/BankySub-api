@@ -2,9 +2,9 @@ import express from "express";
 import db from '../config/database.js';
 import axios from "axios";
 import { decrypt } from "../uttilis/encrypt.js";
-import { PrismaClient } from "@prisma/client";
+import prisma from '../Prisma.client.js';
 import dotenv from "dotenv";
-const prisma = new PrismaClient();
+
 const router = express.Router();
 dotenv.config();
 
