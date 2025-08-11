@@ -251,7 +251,7 @@ router.post("/purchase/bundle", async (req, res) => {
 
         if (user.Pin !== Pin) {
           console.log('Incorrect Transaction Pin')
-          return res.status('Incorrect Transaction Pin');
+          return res.status(400).json({message: 'Incorrect Transaction Pin'});
         }
 
         const userPackage = user.packages;
