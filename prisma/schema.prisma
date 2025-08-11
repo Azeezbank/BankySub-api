@@ -46,7 +46,7 @@ model dataTransactionHist {
   id             Int?
   plan           String?   @db.VarChar(255)
   phone_number   String?   @db.VarChar(20)
-  amount         String?   @db.VarChar(20)
+  amount         Decimal  @db.Decimal(10, 2) @default(0.00)
   balance_before Decimal  @db.Decimal(10, 2) @default(0.00)
   balance_after  Decimal  @db.Decimal(10, 2) @default(0.00)
   status         String?   @db.VarChar(20)
