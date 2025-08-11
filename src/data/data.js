@@ -247,11 +247,11 @@ router.post("/purchase/bundle", async (req, res) => {
           return;
         }
 
-        const Pin = parseInt(user.Pin);
+        const Pin = parseInt(pin);
 
         if (user.Pin !== Pin) {
           console.log('Incorrect Transaction Pin')
-          return res.status('Incorrect Transaction Pin')
+          return res.status('Incorrect Transaction Pin');
         }
 
         const userPackage = user.packages;
