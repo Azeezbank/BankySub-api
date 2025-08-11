@@ -52,6 +52,20 @@ router.get("/info", (req, res) => {
   });
 });
 
+//Update Pin
+router.put("/pin", async (req, res) => {
+  const pin = parseInt(req.body.pin);
+  const userId = req.user.id;
+try {
+  await prisma.users.update({where: {d_id: userId}, data: {Pin: pin}});
+
+  res.status(200).json({ message: "Pin updated successfully" });
+} catch (err) {
+  console.error("Failed to update pin", err);
+  res.status(500).json({ message: "Failed to update pin" });
+}
+});
+
 //Select user bank details
 router.post("/bank/account", (req, res) => {
   const userid = req.user.id;
@@ -167,20 +181,6 @@ router.put("/ban/:id", (req, res) => {
       return res.status(500).json({ message: 'Failed to Ban user' });
     }
   })
-});
-
-//Update Pin
-router.put("/pin", async (req, res) => {
-  const pin = parseInt(req.body.pin);
-  const userId = req.user.id;
-try {
-  await prisma.users.update({where: {d_id: userId}, data: {Pin: pin}});
-
-  res.status(200).json({ message: "Pin updated successfully" });
-} catch (err) {
-  console.error("Failed to update pin", err);
-  res.status(500).json({ message: "Failed to update pin" });
-}
 });
 
 export default router;

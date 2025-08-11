@@ -236,16 +236,24 @@ router.put("/update/plans", (req, res) => {
 
 //Fetch data from API
 router.post("/purchase/bundle", async (req, res) => {
-  const { plan, DataPrice, mobileNumber, choosenNetwork, choosenDataType } =
+  const { plan, DataPrice, mobileNumber, choosenNetwork, choosenDataType, pin } =
     req.body;
   const userId = req.user.id;
 
   try {
-        const user = await prisma.users.findFirst({ where: {d_id: userId}, select: { packages: true, user_balance: true} });
+        const user = await prisma.users.findFirst({ where: {d_id: userId}, select: { packages: true, user_balance: true, Pin: true} });
         if (!user) {
           console.log('Error selecting user packages');
           return;
         }
+
+        const Pin = parseInt(user.Pin);
+
+        if (user.Pin !== Pin) {
+          console.log('Incorrect Transaction Pin')
+          return res.status('Incorrect Transaction Pin')
+        }
+
         const userPackage = user.packages;
 
         let price = "";
