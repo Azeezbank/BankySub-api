@@ -502,17 +502,7 @@ router.post("/purchase/bundle", async (req, res) => {
         }
       });
   
-            
           
-        
-      
-    
-//   } catch (err) {
-//   console.error("Server error", err);
-//   res.status(500).json({ error: "Server error" });
-// }
-
-
 // get data transaction history
 router.get("/history", (req, res) => {
   const userId = req.user.id;

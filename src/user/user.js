@@ -1,18 +1,9 @@
 import express from 'express';
 import db from '../config/database.js';
+import { PrismaClient } from '@prisma/client';
 
+const prisma = new PrismaClient();
 const router = express.Router();
-
-
-//Create table users
-// db.execute(
-//   `CREATE TABLE IF NOT EXISTS users(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, username VARCHAR(20), user_pass VARCHAR(255), user_email VARCHAR(100), user_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP, prev_balance DECIMAL(10,2) DEFAULT 0.00, user_balance DECIMAL(10,2) DEFAULT 0.00, packages ENUM('USER', 'RESELLER', 'API') DEFAULT 'USER', Phone_number VARCHAR(15), Pin INT, role ENUM('admin', 'user') DEFAULT 'user', nin VARCHAR(11), verificationOTP VARCHAR(6), isverified ENUM('true', 'false') DEFAULT 'false', fullName VARCHAR(255), isban ENUM('true', 'false') DEFAULT 'false')`,
-//   (err, result) => {
-//     if (err) throw err;
-//     console.log("Table networks created");
-//   }
-// );
-
 
 
 // Fetch User Details
@@ -178,6 +169,20 @@ router.put("/ban/:id", (req, res) => {
       return res.status(500).json({ message: 'Failed to Ban user' });
     }
   })
+});
+
+//Update Pin
+router.put("/pin", async (req, res) => {
+  const pin = parseInt(req.body.pin);
+  const userId = req.user.id;
+try {
+  await prisma.users.update({where: {d_id: userId}, data: {Pin: pin}});
+
+  res.status(200).json({ message: "Pin updated successfully" });
+} catch (err) {
+  console.error("Failed to update pin", err);
+  res.status(500).json({ message: "Failed to update pin" });
+}
 });
 
 export default router;
