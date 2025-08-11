@@ -250,11 +250,11 @@ router.post("/purchase/bundle", async (req, res) => {
 
         let price = "";
         if (userPackage === "USER") {
-          price = "user";
+          price = "USER";
         } else if (userPackage === "RESELLER") {
-          price = "reseller";
+          price = "RESELLER";
         } else if (userPackage === "API") {
-          price = "api";
+          price = "API";
         } else {
           console.log("No package found");
           return;
