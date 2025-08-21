@@ -408,7 +408,7 @@ router.post("/purchase/bundle", async (req, res) => {
 router.get("/history", async (req, res) => {
   const userId = req.user.id;
 
-    const result = await prisma.dataTransactionHist.findFirst({ where: {id: userId},
+    const result = await prisma.dataTransactionHist.findMany({ where: {id: userId},
     select: {
       d_id: true, plan: true, phone_number: true, amount: true, balance_before: true, balance_after: true, status: true, time: true
     }})
