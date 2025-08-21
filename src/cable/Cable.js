@@ -70,7 +70,7 @@ router.post('/plan', async (req, res) => {
         };
 
         const plan = await prisma.cablePlan.findMany({
-            where: { is_active: 'active', provider: parseInt(providerName) },
+            where: { is_active: 'active', provider: providerName },
             select: selectFields
         });
 
