@@ -33,6 +33,8 @@ app.use(express.json());
 dotenv.config();
 app.use(cookieParser());
 
+app.get("/", (req, res) => res.send("OK"));
+
 // Serve Swagger UI at /api-docs
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Add this route to serve the raw swagger spec
