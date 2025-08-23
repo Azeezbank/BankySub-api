@@ -24,7 +24,7 @@ import plan from './data/data.js';
 import cable from './cable/Cable.js';
 
 
-const port = process.env.PORT || 3006;
+const port = process.env.PORT || 8080;
 
 const app = express();
 app.use(cors(corsOptions));
@@ -63,6 +63,6 @@ app.use('/api/monnify', authenticateToken, monnify);
 
 
 //Connection port
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });
