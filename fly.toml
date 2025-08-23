@@ -1,11 +1,17 @@
 app = "bankysub-api"
+primary_region = "ams"
 
 [build]
   builder = "heroku/builder:24"
 
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"
+
 [[services]]
   internal_port = 8080
   protocol = "tcp"
+  processes = ["app"]
 
   [[services.ports]]
     port = 80
@@ -29,4 +35,3 @@ app = "bankysub-api"
     path = "/"
     protocol = "http"
     tls_skip_verify = false
-    headers = {}
