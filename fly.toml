@@ -1,6 +1,6 @@
 # fly.toml file generated for a Node.js app
 
-app = "Banky"   # 👈 change this to the app name you created on Fly.io
+app = "bankysub-api"   # 👈 change this to the app name you created on Fly.io
 primary_region = "ams"  # 👈 choose the region closest to you (e.g., iad, fra, sin)
 
 [build]
