@@ -3,7 +3,7 @@ name: Deploy to Fly.io
 on:
   push:
     branches:
-      - main   # deploy when pushing to main branch
+      - main
 
 jobs:
   deploy:
@@ -18,5 +18,15 @@ jobs:
 
       - name: Deploy app to Fly.io
         run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Check app status
+        run: flyctl status --app bankysub-api
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Tail logs (last 50 lines)
+        run: flyctl logs --app bankysub-api --max-lines 50
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
