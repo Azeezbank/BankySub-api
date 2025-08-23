@@ -1,16 +1,14 @@
-# fly.toml file generated for a Node.js app
-
-app = "bankysub-api"   # 👈 change this to the app name you created on Fly.io
-primary_region = "ams"  # 👈 choose the region closest to you (e.g., iad, fra, sin)
+app = "bankysub-api"      # 👈 your app name from Fly.io
+primary_region = "ams"    # Amsterdam, closest region
 
 [build]
-  builder = "heroku/buildpacks:20"
+  builder = "heroku/builder:24"
 
 [env]
   NODE_ENV = "production"
 
 [[services]]
-  internal_port = 3000       # 👈 change if your app uses a different port
+  internal_port = 3000
   processes = ["app"]
 
   [[services.ports]]
