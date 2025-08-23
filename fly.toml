@@ -6,9 +6,10 @@ primary_region = "ams"    # Amsterdam, closest region
 
 [env]
   NODE_ENV = "production"
+  PORT = "8080"           # 👈 make sure your app uses this
 
 [[services]]
-  internal_port = 3000
+  internal_port = 8080    # 👈 match your app's port
   processes = ["app"]
 
   [[services.ports]]
