@@ -1,7 +1,7 @@
 app = "bankysub-api"
 
 [build]
-  builder = "heroku/buildpacks:20"
+  builder = "heroku/builder:24"
 
 [[services]]
   internal_port = 8080
