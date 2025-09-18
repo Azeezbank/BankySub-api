@@ -16,14 +16,17 @@ jobs:
       - name: Set up Fly CLI
         uses: superfly/flyctl-actions/setup-flyctl@master
 
-      #  Set DATABASE_URL secret on Fly.io
+      # ✅ Only set secrets if they are not already set on Fly
+      # (to avoid overwriting every deploy)
       - name: Set Fly secrets
+        if: ${{ secrets.DATABASE_URL != '' }}
         run: flyctl secrets set DATABASE_URL=${{ secrets.DATABASE_URL }} --app bankysub-api
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
+      # ✅ Deploy app using remote build (faster, no local Docker upload)
       - name: Deploy app to Fly.io
-        run: flyctl deploy --remote-only --app bankysub-api
+        run: flyctl deploy --remote-only --app bankysub-api --no-cache
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
@@ -32,7 +35,9 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
+      # ✅ Only run logs if deploy succeeds
       - name: Tail logs (last 50 lines)
+        if: success()
         run: flyctl logs --app bankysub-api --max-lines 50
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
