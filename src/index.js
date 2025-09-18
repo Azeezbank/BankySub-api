@@ -24,7 +24,7 @@ import plan from './data/data.js';
 import cable from './cable/Cable.js';
 
 
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 3000;
 
 const app = express();
 app.use(cors(corsOptions));
