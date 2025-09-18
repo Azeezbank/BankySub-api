@@ -16,8 +16,14 @@ jobs:
       - name: Set up Fly CLI
         uses: superfly/flyctl-actions/setup-flyctl@master
 
+      #  Set DATABASE_URL secret on Fly.io
+      - name: Set Fly secrets
+        run: flyctl secrets set DATABASE_URL=${{ secrets.DATABASE_URL }} --app bankysub-api
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
       - name: Deploy app to Fly.io
-        run: flyctl deploy --remote-only
+        run: flyctl deploy --remote-only --app bankysub-api
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
