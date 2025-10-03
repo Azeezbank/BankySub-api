@@ -1,5 +1,4 @@
 import express from "express";
-import db from '../../config/database.js';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import prisma from '../../Prisma.client.js';
@@ -7,17 +6,8 @@ import prisma from '../../Prisma.client.js';
 dotenv.config();
 const router = express.Router();
 
-//Payment transaction table
-// const sql2 = `CREATE TABLE IF NOT EXISTS paymentHist(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, event_type VARCHAR(100), payment_ref VARCHAR(255), paid_on DATETIME, amount DECIMAL(10, 2) DEFAULT 0.00, payment_method VARCHAR(255), payment_status VARCHAR(50), prev_balance DECIMAL(10, 2) DEFAULT 0.00, user_balance DECIMAL(10, 2) DEFAULT 0.00)`;
-// db.execute(sql2, (err, result) => {
-//   if (err) {
-//     console.error(err);
-//   }
-//   console.log("paymentHist table created");
-// });
 
-
-//Payment webhook
+// Payment webhook
 router.post("/", async (req, res) => {
   const payload = req.body;
 
@@ -44,104 +34,85 @@ router.post("/", async (req, res) => {
   const amountPaid = parseFloat(payload.eventData.amountPaid);
   const paymentMethod = payload.eventData.paymentMethod;
   const paymentStatus = payload.eventData.paymentStatus;
-  const userid = reference.split('_')[1];
+  const userId = reference.split("_")[1];
 
   const chargesPercent = 2;
   const charges = (chargesPercent / 100) * amountPaid;
   const netAmount = amountPaid - charges;
 
   try {
-
-    const paymentExists = await prisma.paymentHist.findFirst({where: { payment_ref: paymentRef }});
+    // Step 2: Ensure payment not processed before
+    const paymentExists = await prisma.paymentHist.findFirst({
+      where: { payment_ref: paymentRef },
+    });
     if (paymentExists) {
       return res.status(200).json({ message: "Payment already processed" });
     }
 
-    db.query(
-      `SELECT user_balance, isFund, referral FROM users WHERE d_id = ?`,
-      [userid],
-      (err, result) => {
-        if (err || result.length === 0) {
-          return res
-            .status(500)
-            .json({ message: "Failed to select user balance" });
-        }
+    // Step 3: Get user details
+    const user = await prisma.users.findUnique({
+      where: { d_id: userId },
+      select: { user_balance: true, isFund: true, referral: true },
+    });
 
-        const prevBalance = parseFloat(result[0].user_balance);
-        const newBalance = prevBalance + netAmount;
-        const { isFund, referral } = result[0];
+    if (!user) {
+      return res.status(500).json({ message: "Failed to select user balance" });
+    }
 
+    const prevBalance = parseFloat(user.user_balance);
+    const newBalance = prevBalance + netAmount;
+    const { isFund, referral } = user;
 
-        const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, prev_balance, user_balance) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    // Step 4: Insert into payment history
+    await prisma.paymentHist.create({
+      data: {
+        id: userId,
+        event_type: eventType,
+        payment_ref: paymentRef,
+        paid_on: paidOn,
+        amount: netAmount,
+        payment_method: paymentMethod,
+        payment_status: paymentStatus,
+        prev_balance: prevBalance,
+        user_balance: newBalance,
+      },
+    });
 
-        db.execute(
-          sql,
-          [
-            userid,
-            eventType,
-            paymentRef,
-            paidOn,
-            netAmount,
-            paymentMethod,
-            paymentStatus,
-            prevBalance,
-            newBalance,
-          ],
-          (err, payhist) => {
-            if (err) {
-              console.error("Failed to insert payment history", err);
-              return res
-                .status(500)
-                .json({ message: "Failed to insert payment history" });
-            }
+    // Step 5: Update user balance
+    await prisma.users.update({
+      where: { d_id: userId },
+      data: { user_balance: newBalance, prev_balance: prevBalance },
+    });
 
-            db.execute(
-              `UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`,
-              [newBalance, prevBalance, userid],
-              async (err, result) => {
-                if (err) {
-                  return res
-                    .status(500)
-                    .json({ message: "Failed to update user balance" });
-                }
+    // Step 6: Handle referral bonus
+    const referralPercentage = 2;
+    const referralBonus = (referralPercentage / 100) * netAmount;
 
-                //Calculate the referral % amount
-                const referralPercentage = 2;
-                const referralBonus = (referralPercentage / 100) * netAmount;
+    if (isFund === "false" && referral) {
+      const refer = await prisma.users.findFirst({
+        where: { username: referral },
+      });
 
-                if (isFund === 'false') {
-                  const refer = await prisma.users.findFirst({ where: { username: referral } });
-                  if (!refer) {
-                    console.log('No referral found');
-                  } else if (refer.username === referral) {
-                    console.log('You cant refer yourself');
-                  } else {
-                    await prisma.users.update({
-                      where: { username: referral },
-                      data: {
-                        cashback: { increment: referralBonus },
-                        isFund: 'true'
-                      }
-                    });
-                  }
-                }
-
-                res
-                  .status(200)
-                  .json({ message: "Webhook proccessed successfully" });
-
-              }
-            );
-          }
-        );
+      if (!refer) {
+        console.log("No referral found");
+      } else if (refer.username === referral && refer.d_id === userId) {
+        console.log("You can't refer yourself");
+      } else {
+        await prisma.users.update({
+          where: { username: referral },
+          data: {
+            cashback: { increment: referralBonus },
+            isFund: "true",
+          },
+        });
       }
-    );
-    // }
-    //)
+    }
+
+    return res.status(200).json({ message: "Webhook processed successfully" });
   } catch (err) {
     console.error("Error inserting payment:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
-
 
 export default router;

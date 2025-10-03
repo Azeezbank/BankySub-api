@@ -1,0 +1,14 @@
+# dotenv environment variable files
+.env
+
+# logs
+logs/
+*.log
+
+# node_module
+node_modules/
+
+# Buildfiles
+dist/
+build/
+/src/generated/prisma

@@ -155,7 +155,8 @@ router.post('/subscription', async (req, res) => {
 router.post('/verify/iuc', async (req, res) => {
     const {  providerId, number } = req.body;
     try {
-        const userIdentity = await axios.get(`https://ncwallet.ng/api/cable/cable-validation?cable_id=${providerId}&cable_number=${number}`);
+        const userIdentity = await axios.get(`https://ncwallet.ng/api/cable/cable-validation?cable_id=${providerId}&cable_number=${number}`
+        );
         const iuc = userIdentity.data;
         res.status(200).json(iuc);
     } catch (err) {

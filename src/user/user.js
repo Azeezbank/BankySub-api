@@ -1,186 +1,267 @@
 import express from 'express';
-import db from '../config/database.js';
 import prisma from '../Prisma.client.js';
 const router = express.Router();
 
 
 // Fetch User Details
-router.get("/", (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-  const offset = (page - 1) * limit;
+router.get("/", async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-  const countQuery = "SELECT COUNT(*) AS total FROM users";
-  const sql = `SELECT d_id, username, user_email, user_balance, packages, Phone_number, Pin FROM users LIMIT ?, ?`;
-  db.query(countQuery, (err, countResult) => {
-    if (err) return res.status(500).json({ message: "Server Error" });
-    const total = countResult[0].total;
+    // Get total count
+    const total = await prisma.users.count();
 
-    db.query(sql, [offset, limit], (err, dataResult) => {
-      if (err) {
-        console.log("Error selecting user details", err.message);
-        return res
-          .status(500)
-          .json({ message: "Error selecting user details" });
-      }
-      const totalPage = Math.ceil(total / limit);
-
-      res.status(200).json({
-        total,
-        page,
-        limit,
-        totalPage,
-        data: dataResult,
-      });
+    // Get paginated data
+    const data = await prisma.users.findMany({
+      skip,
+      take: limit,
+      select: {
+        d_id: true,
+        username: true,
+        user_email: true,
+        user_balance: true,
+        packages: true,
+        Phone_number: true,
+        Pin: true,
+      },
     });
-  });
+
+    const totalPage = Math.ceil(total / limit);
+
+    res.status(200).json({
+      total,
+      page,
+      limit,
+      totalPage,
+      data,
+    });
+  } catch (err) {
+    console.error("Error selecting user details", err.message);
+    res.status(500).json({ message: "Error selecting user details" });
+  }
 });
 
+// ✅ Select user details
+router.get("/info", async (req, res) => {
+  const userId = req.user.id;
 
-//Select user details
-router.get("/info", (req, res) => {
-  const userid = req.user.id;
-  const sql = `SELECT username, user_balance, role, packages, cashback, referree FROM users WHERE d_id = ?`;
-  db.query(sql, [userid], (err, result) => {
-    if (err) {
-      return res.status(500).json({ message: "Error selecting user" });
-    }
-    if (result.length === 0) {
+  try {
+    const user = await prisma.users.findUnique({
+      where: { d_id: userId },
+      select: {
+        username: true,
+        user_balance: true,
+        role: true,
+        packages: true,
+        cashback: true,
+        referree: true,
+      },
+    });
+
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json(result);
-  });
+
+    res.status(200).json(user);
+  } catch (err) {
+    console.error("Error selecting user", err);
+    res.status(500).json({ message: "Error selecting user" });
+  }
 });
 
-//Update Pin
+
+// ✅ Update Pin
 router.put("/pin", async (req, res) => {
   const pin = parseInt(req.body.pin);
   const userId = req.user.id;
-try {
-  await prisma.users.update({where: {d_id: userId}, data: {Pin: pin}});
 
-  res.status(200).json({ message: "Pin updated successfully" });
-} catch (err) {
-  console.error("Failed to update pin", err);
-  res.status(500).json({ message: "Failed to update pin" });
-}
+  try {
+    await prisma.users.update({
+      where: { d_id: userId },
+      data: { Pin: pin },
+    });
+
+    res.status(200).json({ message: "Pin updated successfully" });
+  } catch (err) {
+    console.error("Failed to update pin", err);
+    res.status(500).json({ message: "Failed to update pin" });
+  }
 });
 
-//Select user bank details
-router.post("/bank/account", (req, res) => {
-  const userid = req.user.id;
-  const sql = `SELECT * FROM userBankDetails1 WHERE id = ? AND is_active = 'active'`;
-  db.query(sql, [userid], (err, result) => {
-    if (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .json({ message: "Error selecting user bank details" });
-    }
-    if (result.length === 0) {
+
+// ✅ Select user bank details
+router.post("/bank/account", async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const bankDetails = await prisma.userBankDetails1.findFirst({
+      where: {
+        id: userId,
+        is_active: "active",
+      },
+    });
+
+    if (!bankDetails) {
       return res.status(404).json({ message: "No details found" });
     }
-    res.status(200).json(result);
-  });
+
+    res.status(200).json(bankDetails);
+  } catch (err) {
+    console.error("Error selecting user bank details", err);
+    res.status(500).json({ message: "Error selecting user bank details" });
+  }
 });
 
 
-//Fund user manually
-router.post("/fund/:id", (req, res) => {
+// ✅ Fund user manually
+router.post("/fund/:id", async (req, res) => {
   const amount = parseFloat(req.body.amount);
   const id = req.params.id;
+
   const event_type = "Manual Fund";
-  const payment_ref = 'Admin Approved';
+  const payment_ref = "Admin Approved";
   const payment_method = "Manual";
-  const payment_status = 'Approved';
-  const paid_on = new Date().toISOString().replace('T', ' ').split('.')[0];
+  const payment_status = "Approved";
+  const paid_on = new Date();
 
   if (!amount || isNaN(amount)) {
-    console.log("Froud Funding");
+    console.log("Fraud Funding");
     return res.status(400).json({ message: "Invalid amount" });
   }
+
   if (amount > 10000) {
     console.log("Funding amount exceeds limit");
     return res.status(400).json({ message: "Funding amount exceeds limit" });
   }
-  // Select user balance
-  db.query(`SELECT user_balance FROM users WHERE d_id = ?`, [id], (err, result) => {
-    if (err || result.length === 0) {
-      console.error("Error selecting user balance", err);
-      return res.status(500).json({ message: "Error selecting user balance" });
+
+  try {
+    // Select user balance
+    const user = await prisma.users.findUnique({
+      where: { d_id: id },
+      select: { user_balance: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const walletBalance = parseFloat(result[0].user_balance);
-
+    const walletBalance = parseFloat(user.user_balance);
     const newBalance = walletBalance + amount;
 
-    const sql = `INSERT INTO paymentHist(id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, prev_balance, user_balance) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    db.execute(sql, [id, event_type, payment_ref, paid_on, amount, payment_method, payment_status, walletBalance, newBalance], (err, results) => {
-      if (err) {
-        console.error('Failed to insert funding record', err);
-        return res.status(500).json({ message: 'Failed to insert funding recorf' });
-      }
+    // Insert into paymentHist
+    await prisma.paymentHist.create({
+      data: {
+        id,
+        event_type,
+        payment_ref,
+        paid_on,
+        amount,
+        payment_method,
+        payment_status,
+        prev_balance: walletBalance,
+        user_balance: newBalance,
+      },
+    });
 
-      // Update user balance
-      const sql2 = `UPDATE users SET user_balance = ?, prev_balance = ? WHERE d_id = ?`;
-      db.execute(sql2, [newBalance, walletBalance, id], (err, result) => {
-        if (err) {
-          console.error('Failed to update user balance', err);
-          return res.status(500).json({ message: 'Failed to update user balance' });
-        }
-        res.status(200).json({ message: 'Wallet Funded Manually successfully' });
-      });
-    })
-  });
+    // Update user balance
+    await prisma.users.update({
+      where: { d_id: id },
+      data: {
+        user_balance: newBalance,
+        prev_balance: walletBalance,
+      },
+    });
+
+    res.status(200).json({ message: "Wallet Funded Manually successfully" });
+  } catch (err) {
+    console.error("Error funding wallet manually", err);
+    res.status(500).json({ message: "Failed to fund wallet" });
+  }
 });
 
-//Select user details by id
-router.get("/info/:id", (req, res) => {
+
+// ✅ Select user details by id
+router.get("/info/:id", async (req, res) => {
   const id = req.params.id;
-  const sql = `SELECT d_id, username, user_email, user_balance, packages, Phone_number, Pin, fullName FROM users WHERE d_id = ?`;
-  db.query(sql, [id], (err, result) => {
-    if (err) {
-      console.error('Failed to select user details', err);
-      return res.status(500).json({ message: 'Failed to select user details' });
+
+  try {
+    const user = await prisma.users.findUnique({
+      where: { d_id: id },
+      select: {
+        d_id: true,
+        username: true,
+        user_email: true,
+        user_balance: true,
+        packages: true,
+        Phone_number: true,
+        Pin: true,
+        fullName: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json(result[0])
-  });
+
+    res.status(200).json(user);
+  } catch (err) {
+    console.error("Failed to select user details", err);
+    res.status(500).json({ message: "Failed to select user details" });
+  }
 });
 
-//updated user details
-router.put("/update/:id", (req, res) => {
+
+// ✅ Update user details dynamically
+router.put("/update/:id", async (req, res) => {
   const id = req.params.id;
   const { fieldName, value } = req.body;
 
   // Validate allowed fields
-  const allowedFields = ['username', 'user_email', 'user_balance', 'packages', 'Phone_number', 'Pin', 'fullName'];
+  const allowedFields = [
+    "username",
+    "user_email",
+    "user_balance",
+    "packages",
+    "Phone_number",
+    "Pin",
+    "fullName",
+  ];
+
   if (!allowedFields.includes(fieldName)) {
     return res.status(400).json({ message: "Invalid field name" });
   }
 
-  // Build dynamic field update safely
-  const sql = `UPDATE users SET ${fieldName} = ? WHERE d_id = ?`;
+  try {
+    await prisma.users.update({
+      where: { d_id: id },
+      data: { [fieldName]: value },
+    });
 
-  db.execute(sql, [value, id], (err, result) => {
-    if (err) {
-      console.error("Failed to update user details", err);
-      return res.status(500).json({ message: "Failed to update user details" });
-    }
     res.status(200).json({ message: "User details updated successfully" });
-  });
+  } catch (err) {
+    console.error("Failed to update user details", err);
+    res.status(500).json({ message: "Failed to update user details" });
+  }
 });
 
-//Ban user
-router.put("/ban/:id", (req, res) => {
+
+// ✅ Ban user
+router.put("/ban/:id", async (req, res) => {
   const id = req.params.id;
-  const ban = 'true';
-  const sql = `UPDATE users SET isban = ? WHERE d_id = ?`;
-  db.execute(sql, [ban, id], (err, result) => {
-    if (err) {
-      console.error('Failed to Ban user', err);
-      return res.status(500).json({ message: 'Failed to Ban user' });
-    }
-  })
+
+  try {
+    await prisma.users.update({
+      where: { d_id: id },
+      data: { isban: "true" },
+    });
+
+    res.status(200).json({ message: "User banned successfully" });
+  } catch (err) {
+    console.error("Failed to ban user", err);
+    res.status(500).json({ message: "Failed to ban user" });
+  }
 });
 
 export default router;

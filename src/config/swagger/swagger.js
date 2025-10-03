@@ -11,7 +11,7 @@ const options = {
     },
     servers: [
       {
-        url: 'https://bankysub-api.onrender.com', // change this to your backend base URL
+        url: 'https://bankysub-connect.fly.dev', // change this to your backend base URL
         description: "Production server",
       },
       {

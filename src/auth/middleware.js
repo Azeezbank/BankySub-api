@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import JWT from "jsonwebtoken";
-import db from '../config/database.js';
+import prisma from '../Prisma.client.js';
 
 dotenv.config();
 
@@ -25,20 +25,28 @@ export const authenticateToken = (req, res, next) => {
 
 
 //Check if a user is admin
-export const isAdmin = (req, res, next) => {
+export const isAdmin = async (req, res, next) => {
   const userId = req.user.id;
-  const sql = `SELECT role FROM users WHERE d_id = ?`
-  db.query(sql, [userId], (err, result) => {
-    if (err || result.length === 0) {
-      console.log('Failed to select user', err.message);
-      return res.status(400).json({ message: 'Failed to select user' });
+
+  try {
+    const user = await prisma.users.findUnique({
+      where: { d_id: userId },
+      select: { role: true },
+    });
+
+    if (!user) {
+      console.log("Failed to select user");
+      return res.status(400).json({ message: "Failed to select user" });
     }
 
-    if (result[0].role !== 'admin') {
-      console.log('Access denied, Admin Only', err.message);
-      return res.status(403).json({ message: 'Access denied, Admin Only' });
+    if (user.role !== "admin") {
+      console.log("Access denied, Admin Only");
+      return res.status(403).json({ message: "Access denied, Admin Only" });
     }
 
     next();
-  });
+  } catch (err) {
+    console.error("Error checking admin role:", err.message);
+    return res.status(500).json({ message: "Server error" });
+  }
 };

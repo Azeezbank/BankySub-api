@@ -33,7 +33,10 @@ app.use(express.json());
 dotenv.config();
 app.use(cookieParser());
 
-app.get("/", (req, res) => res.send("OK"));
+
+app.get("/", (req, res) => {
+  res.send("Welcome to Bankyconnect API");
+});
 
 // Serve Swagger UI at /api-docs
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -64,7 +67,7 @@ app.use('/api/monnify', authenticateToken, monnify);
 
 
 
-//Connection port
+//Connection port.
 app.listen(port, "0.0.0.0", () => {
   console.log(`Server running on port ${port}`);
 });

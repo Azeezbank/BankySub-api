@@ -1,11 +1,9 @@
 import express from "express";
-import db from '../config/database.js';
+import prisma from '../Prisma.client.js';
+
 const router = express.Router();
 
-// db.execute(`CREATE TABLE IF NOT EXISTS networks(d_id INT PRIMARY KEY AUTO_INCREMENT, id INT, name VARCHAR(10), is_active ENUM('active', 'disabled') DEFAULT 'active')`, async (err, result) => {
-//     if (err) throw err;
-//     console.log("Table networks created");
-// });
+
 
 // db.execute(`INSERT INTO networks(name) VALUES('MTN')`, (err, result) => {
 //   if (err) throw err;
@@ -13,16 +11,18 @@ const router = express.Router();
 // });
 
 
-//Fetch data network
-router.get("/", (req, res) => {
-  const sql = `SELECT * FROM networks WHERE is_active = 'active'`;
-  db.query(sql, (err, result) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ message: "Server unavailable" });
-    }
-    res.status(200).json(result);
-  });
+// Fetch data network
+router.get("/", async (req, res) => {
+  try {
+    const networks = await prisma.networks.findMany({
+      where: { is_active: "active" }
+    });
+
+    res.status(200).json(networks);
+  } catch (err) {
+    console.error("Failed to fetch networks:", err);
+    res.status(500).json({ message: "Server unavailable" });
+  }
 });
 
 export default router;

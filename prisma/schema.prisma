@@ -9,75 +9,75 @@ datasource db {
 
 model AirtimeN {
   d_id      Int                 @id @default(autoincrement())
-  name      String?             @db.VarChar(10)
+  name      String?
   is_active AirtimeN_is_active? @default(active)
   id        Int?
 }
 
 model AirtimeT {
   d_id      Int                 @id @default(autoincrement())
-  name      String?             @db.VarChar(10)
+  name      String?
   is_active AirtimeT_is_active? @default(active)
 }
 
 model admin_setting {
   d_id            Int     @id @default(autoincrement())
-  whatsapp_phone  String? @db.VarChar(15)
-  whatsapp_link   String? @db.VarChar(255)
+  whatsapp_phone  String?
+  whatsapp_link   String?
   dash_message    String? @db.Text
-  whatsapp_number String? @db.VarChar(255)
+  whatsapp_number String?
 }
 
 model airtimeHist {
   d_id             Int       @id @default(autoincrement())
   id               Int?
-  network          String?   @db.VarChar(15)
-  amount           String?   @db.VarChar(15)
-  phone_number     String?   @db.VarChar(20)
-  previous_balance String?   @db.VarChar(15)
-  new_balance      String?   @db.VarChar(15)
-  time             DateTime? @db.DateTime(0)
-  status           String?   @db.VarChar(15)
-  airtimeType      String?   @db.VarChar(20)
+  network          String?
+  amount           String?
+  phone_number     String?
+  previous_balance String?
+  new_balance      String?
+  time             DateTime?
+  status           String?
+  airtimeType      String?
 }
 
 model dataTransactionHist {
-  d_id           Int       @id @default(autoincrement())
+  d_id           Int      @id @default(autoincrement())
   id             Int?
-  plan           String?   @db.VarChar(255)
-  phone_number   String?   @db.VarChar(20)
-  amount         Decimal  @db.Decimal(10, 2) @default(0.00)
-  balance_before Decimal  @db.Decimal(10, 2) @default(0.00)
-  balance_after  Decimal  @db.Decimal(10, 2) @default(0.00)
-  status         String?   @db.VarChar(20)
-  time           DateTime    @default(now())
+  plan           String?
+  phone_number   String?
+  amount         Decimal  @default(0.00) @db.Decimal(10, 2)
+  balance_before Decimal  @default(0.00) @db.Decimal(10, 2)
+  balance_after  Decimal  @default(0.00) @db.Decimal(10, 2)
+  status         String?
+  time           DateTime @default(now())
 }
 
 model data_plans {
   d_id         Int                   @id @default(autoincrement())
   id           Int?
-  name         String?               @db.VarChar(100)
-  network_name String?               @db.VarChar(100)
-  data_type    String?               @db.VarChar(100)
-  validity     String?               @db.VarChar(255)
+  name         String?
+  network_name String?
+  data_type    String?
+  validity     String?
   is_active    data_plans_is_active? @default(active)
-  USER         Decimal  @db.Decimal(10, 2) @default(0.00)
-  RESELLER     Decimal  @db.Decimal(10, 2) @default(0.00)
-  API          Decimal  @db.Decimal(10, 2) @default(0.00)
+  USER         Decimal               @default(0.00) @db.Decimal(10, 2)
+  RESELLER     Decimal               @default(0.00) @db.Decimal(10, 2)
+  API          Decimal               @default(0.00) @db.Decimal(10, 2)
 }
 
 model data_types {
   d_id         Int                   @id @default(autoincrement())
-  name         String?               @db.VarChar(255)
+  name         String?
   is_active    data_types_is_active? @default(active)
-  network_name String?               @db.VarChar(255)
+  network_name String?
 }
 
 model env {
   d_id         Int     @id @default(autoincrement())
-  service_type String? @db.VarChar(255)
-  api_key      String? @db.VarChar(255)
-  api_url      String? @db.VarChar(255)
+  service_type String?
+  api_key      String?
+  api_url      String?
 }
 
 model networks {
@@ -92,18 +92,18 @@ model paymentHist {
   id             Int?
   event_type     String?   @db.VarChar(100)
   payment_ref    String?   @db.VarChar(255)
-  paid_on        DateTime? @db.DateTime(0)
-  amount         Decimal  @db.Decimal(10, 2) @default(0.00)
+  paid_on        DateTime?
+  amount         Decimal   @default(0.00) @db.Decimal(10, 2)
   payment_method String?   @db.VarChar(255)
   payment_status String?   @db.VarChar(50)
-  prev_balance   Decimal  @db.Decimal(10, 2) @default(0.00)
-  user_balance   Decimal  @db.Decimal(10, 2) @default(0.00)
+  prev_balance   Decimal   @default(0.00) @db.Decimal(10, 2)
+  user_balance   Decimal   @default(0.00) @db.Decimal(10, 2)
 }
 
 model transactionWebHook {
   d_id             Int       @id @default(autoincrement())
   webHook_response String?   @db.VarChar(800)
-  create_date      DateTime? @db.DateTime(0)
+  create_date      DateTime?
 }
 
 model userBankDetails1 {
@@ -117,61 +117,60 @@ model userBankDetails1 {
 }
 
 model users {
-  d_id            Int               @id @default(autoincrement())
-  username        String           @db.VarChar(20)                  @unique
-  user_pass       String           @db.VarChar(255)
-  user_email      String           @db.VarChar(100)                 @unique
-  user_registered DateTime?         @default(now())                 @db.Timestamp(0)
-  prev_balance    Decimal           @db.Decimal(10, 2)        @default(0.00)
-  user_balance    Decimal           @db.Decimal(10, 2)        @default(0.00)
-  packages        users_packages?   @default(USER)
-  Pin             Int               @default(0)
-  Phone_number    String?           @db.VarChar(15)
-  role            users_role?       @default(user)
-  nin             String?           @db.VarChar(11)
-  verificationOTP String?           @db.VarChar(100)
-  isverified      String            @default("false")
-  fullName        String?           @db.VarChar(255)
-  isban           String            @default("false")
+  d_id            Int             @id @default(autoincrement())
+  username        String          @unique @db.VarChar(20)
+  user_pass       String          @db.VarChar(255)
+  user_email      String          @unique @db.VarChar(100)
+  user_registered DateTime?       @default(now()) @db.Timestamp(0)
+  prev_balance    Decimal         @default(0.00) @db.Decimal(10, 2)
+  user_balance    Decimal         @default(0.00) @db.Decimal(10, 2)
+  packages        users_packages? @default(USER)
+  Pin             Int             @default(0)
+  Phone_number    String?         @db.VarChar(15)
+  role            users_role?     @default(user)
+  nin             String?         @db.VarChar(11)
+  verificationOTP String?         @db.VarChar(100)
+  isverified      String          @default("false")
+  fullName        String?         @db.VarChar(255)
+  isban           String          @default("false")
   referral        String?
-  isFund          String            @default("false")
-  cashback        Decimal  @db.Decimal(10, 2) @default(0.00)
-  referree        Int               @default(0)
-
+  isFund          String          @default("false")
+  cashback        Decimal         @default(0.00) @db.Decimal(10, 2)
+  referree        Int             @default(0)
 }
 
 model cable {
-  d_id             Int       @id @default(autoincrement())
-  id               Int
-  provider         String
+  d_id      Int              @id @default(autoincrement())
+  id        Int
+  provider  String
   is_active cable_is_active? @default(active)
 }
 
 model cablePlan {
-  d_id     Int    @id @default(autoincrement())
-  id       Int
+  d_id           Int                  @id @default(autoincrement())
+  id             Int
   provider       String
   cable_name     String
-  user_price        Decimal  @db.Decimal(10, 2) @default(0.00)
-  reseller_price    Decimal  @db.Decimal(10, 2) @default(0.00)
-  api_price         Decimal  @db.Decimal(10, 2) @default(0.00)
-  is_active cableplan_is_active? @default(active)
+  user_price     Decimal              @default(0.00) @db.Decimal(10, 2)
+  reseller_price Decimal              @default(0.00) @db.Decimal(10, 2)
+  api_price      Decimal              @default(0.00) @db.Decimal(10, 2)
+  is_active      cableplan_is_active? @default(active)
 }
 
 model cablenumber {
-  d_id    Int  @id @default(autoincrement())
-  number  String
+  d_id      Int                    @id @default(autoincrement())
+  number    String
   is_active cablenumber_is_active? @default(active)
 }
 
 model cableHist {
-  d_id         Int    @id    @default(autoincrement())
+  d_id         Int      @id @default(autoincrement())
   id           Int
-  providername      String
-  cable_name        String
-  amount            Decimal  @db.Decimal(10, 2)  @default(0.00)
-  customerName      String
-  createdAt         DateTime      @default(now())
+  providername String
+  cable_name   String
+  amount       Decimal  @default(0.00) @db.Decimal(10, 2)
+  customerName String
+  createdAt    DateTime @default(now())
 }
 
 enum cablenumber_is_active {
@@ -229,5 +228,3 @@ enum users_role {
   admin
   user
 }
-
-
