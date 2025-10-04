@@ -92,7 +92,7 @@ model paymentHist {
   id             Int?
   event_type     String?   @db.VarChar(100)
   payment_ref    String?   @db.VarChar(255)
-  paid_on        DateTime?
+  paid_on        String?
   amount         Decimal   @default(0.00) @db.Decimal(10, 2)
   payment_method String?   @db.VarChar(255)
   payment_status String?   @db.VarChar(50)
