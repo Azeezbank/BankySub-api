@@ -93,7 +93,7 @@ router.put("/pin", async (req, res) => {
 
 // Select user bank details
 router.post("/bank/account", async (req, res) => {
-  const userId = req.user.id;
+  const userId = parseInt(req.user.id);
 
   try {
     const bankDetails = await prisma.userBankDetails1.findFirst({
@@ -118,7 +118,7 @@ router.post("/bank/account", async (req, res) => {
 // Fund user manually
 router.post("/fund/:id", async (req, res) => {
   const amount = parseFloat(req.body.amount);
-  const id = req.params.id;
+  const id = parseInt(req.params.id);
 
   const event_type = "Manual Fund";
   const payment_ref = "Admin Approved";
@@ -213,9 +213,9 @@ router.get("/info/:id", async (req, res) => {
 });
 
 
-// ✅ Update user details dynamically
+// Update user details dynamically
 router.put("/update/:id", async (req, res) => {
-  const id = req.params.id;
+  const id = parseInt(req.params.id);
   const { fieldName, value } = req.body;
 
   // Validate allowed fields
@@ -247,9 +247,9 @@ router.put("/update/:id", async (req, res) => {
 });
 
 
-// ✅ Ban user
+//  Ban user
 router.put("/ban/:id", async (req, res) => {
-  const id = req.params.id;
+  const id = parseInt(req.params.id);
 
   try {
     await prisma.users.update({

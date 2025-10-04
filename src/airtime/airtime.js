@@ -64,7 +64,7 @@ router.get("/type", async (req, res) => {
 // Fetch Airtime from API
 router.post("/topup", async (req, res) => {
   const { airtimeNChoosen, airtimeTChoosen, mobileN, amount, actualAmount } = req.body;
-  const userId = req.user.id;
+  const userId = parseInt(req.user.id);
 
   const airtimeBody = {
     network: airtimeNChoosen,
@@ -199,7 +199,7 @@ router.post("/topup", async (req, res) => {
 
 // Fetch airtime transaction histories
 router.get("/history", async (req, res) => {
-  const userId = req.user.id;
+  const userId = parseInt(req.user.id);
 
   try {
     const histories = await prisma.airtimeHist.findMany({

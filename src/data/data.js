@@ -67,7 +67,7 @@ router.put("/update/types/status", async (req, res) => {
 // Fetch data plans
 router.post("/plans", async (req, res) => {
   const { choosenNetwork, choosenDataType } = req.body;
-  const userId = req.user.id;
+  const userId = parseInt(req.user.id);
 
   try {
     const user = await prisma.users.findUnique({
@@ -154,9 +154,9 @@ router.get("/plan", async (req, res) => {
           network_name: true,
           data_type: true,
           validity: true,
-          user: true,
-          reseller: true,
-          api: true,
+          USER: true,
+          RESELLER: true,
+          API: true,
           is_active: true,
         },
       }),
@@ -169,9 +169,9 @@ router.get("/plan", async (req, res) => {
           network_name: true,
           data_type: true,
           validity: true,
-          user: true,
-          reseller: true,
-          api: true,
+          USER: true,
+          RESELLER: true,
+          API: true,
           is_active: true,
         },
       }),
@@ -184,9 +184,9 @@ router.get("/plan", async (req, res) => {
           network_name: true,
           data_type: true,
           validity: true,
-          user: true,
-          reseller: true,
-          api: true,
+          USER: true,
+          RESELLER: true,
+          API: true,
           is_active: true,
         },
       }),
@@ -199,9 +199,9 @@ router.get("/plan", async (req, res) => {
           network_name: true,
           data_type: true,
           validity: true,
-          user: true,
-          reseller: true,
-          api: true,
+          USER: true,
+          RESELLER: true,
+          API: true,
           is_active: true,
         },
       }),
@@ -264,9 +264,9 @@ router.put("/update/plans", async (req, res) => {
               network_name,
               data_type,
               validity,
-              user,
-              reseller,
-              api,
+              USER: user,
+              RESELLER: reseller,
+              API: api,
               is_active,
             },
           })
@@ -295,7 +295,7 @@ router.post("/purchase/bundle", async (req, res) => {
     choosenDataType,
     pin,
   } = req.body;
-  const userId = req.user.id;
+  const userId = parseInt(req.user.id);
 
   try {
     // 1. Get user details
@@ -454,7 +454,7 @@ router.post("/purchase/bundle", async (req, res) => {
           
 // get data transaction history
 router.get("/history", async (req, res) => {
-  const userId = req.user.id;
+  const userId = parseInt(req.user.id);
 
     const result = await prisma.dataTransactionHist.findMany({ where: {id: userId},
     select: {

@@ -30,7 +30,7 @@ const authenticate = async () => {
 
 // Payment connection - Create dedicated account number
 router.post("/dedicated/account", async (req, res) => {
-  const userId = req.user.id;
+  const userId = parseInt(req.user.id);
 
   try {
     const token = await authenticate();
