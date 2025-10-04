@@ -60,7 +60,7 @@ model data_plans {
   network_name String?
   data_type    String?
   validity     String?
-  is_active    data_plans_is_active? @default(active)
+  is_active    Data_plans_is_active? @default(active)
   USER         Decimal               @default(0.00) @db.Decimal(10, 2)
   RESELLER     Decimal               @default(0.00) @db.Decimal(10, 2)
   API          Decimal               @default(0.00) @db.Decimal(10, 2)
@@ -69,7 +69,7 @@ model data_plans {
 model data_types {
   d_id         Int                   @id @default(autoincrement())
   name         String?
-  is_active    data_types_is_active? @default(active)
+  is_active    Data_types_is_active? @default(active)
   network_name String?
 }
 
@@ -83,7 +83,7 @@ model env {
 model networks {
   d_id      Int                 @id @default(autoincrement())
   name      String?             @db.VarChar(10)
-  is_active networks_is_active? @default(active)
+  is_active Networks_is_active? @default(active)
   id        Int?
 }
 
@@ -112,7 +112,7 @@ model userBankDetails1 {
   acctNo    String?                     @db.VarChar(255)
   acctName  String?                     @db.VarChar(255)
   bankName  String?                     @db.VarChar(255)
-  is_active userBankDetails1_is_active? @default(active)
+  is_active UserBankDetails1_is_active? @default(active)
   acct_id   String
 }
 
@@ -124,10 +124,10 @@ model users {
   user_registered DateTime?       @default(now()) @db.Timestamp(0)
   prev_balance    Decimal         @default(0.00) @db.Decimal(10, 2)
   user_balance    Decimal         @default(0.00) @db.Decimal(10, 2)
-  packages        users_packages? @default(USER)
+  packages        Users_packages? @default(USER)
   Pin             Int             @default(0)
   Phone_number    String?         @db.VarChar(15)
-  role            users_role?     @default(user)
+  role            Users_role?     @default(user)
   nin             String?         @db.VarChar(11)
   verificationOTP String?         @db.VarChar(100)
   isverified      String          @default("false")
@@ -143,7 +143,7 @@ model cable {
   d_id      Int              @id @default(autoincrement())
   id        Int
   provider  String
-  is_active cable_is_active? @default(active)
+  is_active Cable_is_active? @default(active)
 }
 
 model cablePlan {
@@ -154,13 +154,13 @@ model cablePlan {
   user_price     Decimal              @default(0.00) @db.Decimal(10, 2)
   reseller_price Decimal              @default(0.00) @db.Decimal(10, 2)
   api_price      Decimal              @default(0.00) @db.Decimal(10, 2)
-  is_active      cableplan_is_active? @default(active)
+  is_active      Cableplan_is_active? @default(active)
 }
 
 model cablenumber {
   d_id      Int                    @id @default(autoincrement())
   number    String
-  is_active cablenumber_is_active? @default(active)
+  is_active Cablenumber_is_active? @default(active)
 }
 
 model cableHist {
@@ -173,17 +173,17 @@ model cableHist {
   createdAt    DateTime @default(now())
 }
 
-enum cablenumber_is_active {
+enum Cablenumber_is_active {
   active
   disabled
 }
 
-enum cableplan_is_active {
+enum Cableplan_is_active {
   active
   disabled
 }
 
-enum cable_is_active {
+enum Cable_is_active {
   active
   disabled
 }
@@ -193,12 +193,12 @@ enum AirtimeN_is_active {
   disabled
 }
 
-enum data_types_is_active {
+enum Data_types_is_active {
   active
   disabled
 }
 
-enum networks_is_active {
+enum Networks_is_active {
   active
   disabled
 }
@@ -208,23 +208,23 @@ enum AirtimeT_is_active {
   disabled
 }
 
-enum userBankDetails1_is_active {
+enum UserBankDetails1_is_active {
   active
   disabled
 }
 
-enum data_plans_is_active {
+enum Data_plans_is_active {
   active
   disabled
 }
 
-enum users_packages {
+enum Users_packages {
   USER
   RESELLER
   API
 }
 
-enum users_role {
+enum Users_role {
   admin
   user
 }
