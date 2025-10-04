@@ -75,9 +75,9 @@ model data_types {
 
 model env {
   d_id         Int     @id @default(autoincrement())
-  service_type String?
-  api_key      String?
-  api_url      String?
+  service_type String?  @db.Text
+  api_key      String? @db.Text
+  api_url      String?  @db.Text
 }
 
 model networks {

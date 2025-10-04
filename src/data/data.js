@@ -81,11 +81,11 @@ router.post("/plans", async (req, res) => {
 
     let packag = "";
     if (user.packages === "USER") {
-      packag = "user";
+      packag = "USER";
     } else if (user.packages === "RESELLER") {
-      packag = "reseller";
+      packag = "RESELLER";
     } else if (user.packages === "API") {
-      packag = "api";
+      packag = "API";
     } else {
       console.log("Invalid package type");
       return res.status(400).json({ message: "Invalid package type" });
@@ -104,13 +104,13 @@ router.post("/plans", async (req, res) => {
         network_name: true,
         data_type: true,
         validity: true,
-        [packag]: true, // dynamically select the column based on user package
+        [packag]: true,
       },
     });
 
     res.status(200).json(plans);
   } catch (err) {
-    console.error("Failed to fetch data plans", err.message);
+    console.error("Failed to fetch data plans", err);
     return res.status(500).json({ message: "Failed to fetch data plans" });
   }
 });
@@ -135,7 +135,7 @@ router.get("/all/plan", async (req, res) => {
 
     res.status(200).json(result);
   } catch (err) {
-    console.error("Failed to select mtn sme data", err.message);
+    console.error("Failed to select mtn sme data", err);
     return res.status(500).json({ error: "Failed to select mtn sme data" });
   }
 });
@@ -209,7 +209,7 @@ router.get("/plan", async (req, res) => {
 
     res.status(200).json({ mtn, airtel, glo, mobile });
   } catch (err) {
-    console.error("Failed to fetch data plans", err.message);
+    console.error("Failed to fetch data plans", err);
     return res.status(500).json({ error: "Failed to fetch data plans" });
   }
 });

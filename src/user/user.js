@@ -43,7 +43,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ✅ Select user details
+// Select user details
 router.get("/info", async (req, res) => {
   const userId = req.user.id;
 
@@ -72,7 +72,7 @@ router.get("/info", async (req, res) => {
 });
 
 
-// ✅ Update Pin
+// Update Pin
 router.put("/pin", async (req, res) => {
   const pin = parseInt(req.body.pin);
   const userId = req.user.id;
@@ -91,7 +91,7 @@ router.put("/pin", async (req, res) => {
 });
 
 
-// ✅ Select user bank details
+// Select user bank details
 router.post("/bank/account", async (req, res) => {
   const userId = req.user.id;
 
@@ -115,7 +115,7 @@ router.post("/bank/account", async (req, res) => {
 });
 
 
-// ✅ Fund user manually
+// Fund user manually
 router.post("/fund/:id", async (req, res) => {
   const amount = parseFloat(req.body.amount);
   const id = req.params.id;
