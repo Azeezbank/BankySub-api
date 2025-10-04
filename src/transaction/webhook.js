@@ -19,7 +19,7 @@ router.post("/webhook/histories", async (req, res) => {
       message: "Webhook transaction details has been successfully inserted",
     });
   } catch (err) {
-    console.error("Failed to insert webhook transaction details", err.message);
+    console.error("Failed to insert webhook transaction details", err);
     res.status(500).json({
       message: "Failed to insert webhook transaction details",
     });

@@ -34,7 +34,7 @@ router.post("/", async (req, res) => {
   const amountPaid = parseFloat(payload.eventData.amountPaid);
   const paymentMethod = payload.eventData.paymentMethod;
   const paymentStatus = payload.eventData.paymentStatus;
-  const userId = reference.split("_")[1];
+  const userId = parseInt(reference.split("_")[1]);
 
   const chargesPercent = 2;
   const charges = (chargesPercent / 100) * amountPaid;
