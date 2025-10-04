@@ -126,9 +126,9 @@ router.get("/all/plan", async (req, res) => {
         network_name: true,
         data_type: true,
         validity: true,
-        user: true,
-        reseller: true,
-        api: true,
+        USER: true,
+        RESELLER: true,
+        API: true,
         is_active: true,
       },
     });

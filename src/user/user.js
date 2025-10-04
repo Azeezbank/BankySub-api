@@ -45,7 +45,7 @@ router.get("/", async (req, res) => {
 
 // Select user details
 router.get("/info", async (req, res) => {
-  const userId = req.user.id;
+  const userId = parseInt(req.user.id);
 
   try {
     const user = await prisma.users.findUnique({
@@ -182,9 +182,9 @@ router.post("/fund/:id", async (req, res) => {
 });
 
 
-// ✅ Select user details by id
+// Select user details by id
 router.get("/info/:id", async (req, res) => {
-  const id = req.params.id;
+  const id = parseInt(req.params.id);
 
   try {
     const user = await prisma.users.findUnique({
