@@ -125,6 +125,7 @@ router.post("/fund/:id", async (req, res) => {
   const payment_method = "Manual";
   const payment_status = "Approved";
   const paid_on = new Date();
+  const now = paid_on.toString();
 
   if (!amount || isNaN(amount)) {
     console.log("Fraud Funding");
@@ -156,7 +157,7 @@ router.post("/fund/:id", async (req, res) => {
         id,
         event_type,
         payment_ref,
-        paid_on,
+        paid_on: now,
         amount,
         payment_method,
         payment_status,
