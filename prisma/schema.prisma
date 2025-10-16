@@ -108,7 +108,7 @@ model transactionWebHook {
 
 model userBankDetails1 {
   d_id      Int                         @id @default(autoincrement())
-  id        Int?
+  id        Int
   acctNo    String?                     @db.VarChar(255)
   acctName  String?                     @db.VarChar(255)
   bankName  String?                     @db.VarChar(255)

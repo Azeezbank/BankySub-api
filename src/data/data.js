@@ -264,9 +264,9 @@ router.put("/update/plans", async (req, res) => {
               network_name,
               data_type,
               validity,
-              USER: USER ? new prisma.Decimal(USER) : new prisma.Decimal(0.0),
-              RESELLER: RESELLER ? new prisma.Decimal(RESELLER) : new prisma.Decimal(0.0),
-              API: API ? new prisma.Decimal(API) : new prisma.Decimal(0.0),
+              USER: USER,
+              RESELLER: RESELLER,
+              API: API,
               is_active,
             },
           })
