@@ -264,9 +264,9 @@ router.put("/update/plans", async (req, res) => {
               network_name,
               data_type,
               validity,
-              USER,
-              RESELLER,
-              API,
+              USER: USER ? new prisma.Decimal(USER) : new prisma.Decimal(0.0),
+              RESELLER: RESELLER ? new prisma.Decimal(RESELLER) : new prisma.Decimal(0.0),
+              API: API ? new prisma.Decimal(API) : new prisma.Decimal(0.0),
               is_active,
             },
           })
@@ -275,12 +275,12 @@ router.put("/update/plans", async (req, res) => {
 
     res
       .status(200)
-      .json({ message: "All MTN SME data plans updated successfully" });
+      .json({ message: "All data plans updated successfully" });
   } catch (err) {
-    console.error("Error updating data:", err.message);
+    console.error("Error updating data:", err);
     res
       .status(500)
-      .json({ error: "Failed to update one or more plans", details: err.message });
+      .json({ error: "Failed to update one or more plans" });
   }
 });
 
