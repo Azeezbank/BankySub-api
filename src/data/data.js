@@ -251,9 +251,9 @@ router.put("/update/plans", async (req, res) => {
           network_name,
           data_type,
           validity,
-          user,
-          reseller,
-          api,
+          USER,
+          RESELLER,
+          API,
           is_active,
         }) =>
           prisma.data_plans.update({
@@ -264,9 +264,9 @@ router.put("/update/plans", async (req, res) => {
               network_name,
               data_type,
               validity,
-              USER: user,
-              RESELLER: reseller,
-              API: api,
+              USER,
+              RESELLER,
+              API,
               is_active,
             },
           })
