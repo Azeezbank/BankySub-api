@@ -131,6 +131,7 @@ router.get("/all/plan", async (req, res) => {
         API: true,
         is_active: true,
       },
+      orderBy: { createdAt: "desc" }
     });
 
     res.status(200).json(result);
@@ -242,40 +243,21 @@ router.put("/update/plans", async (req, res) => {
 
   try {
     // Run all updates in parallel
-    await Promise.all(
-      mtnSme.map(
-        ({
-          d_id,
-          id,
-          name,
-          network_name,
-          data_type,
-          validity,
-          USER,
-          RESELLER,
-          API,
-          is_active,
-        }) =>
-          prisma.data_plans.update({
-            where: { d_id },
-            data: {
-              id,
-              name,
-              network_name,
-              data_type,
-              validity,
-              USER: USER,
-              RESELLER: RESELLER,
-              API: API,
-              is_active,
-            },
-          })
-      )
-    );
+    await prisma.$transaction(
+      mtnSme.map((item) =>
+        prisma.data_plans.update({
+          where: { d_id: item.d_id },
+          data: {
+            id: item.id, name: item.name,
+            network_name: item.network_name,
+            data_type: item.data_type,
+            validity: item.validity, is_active: item.is_active,
+            USER: item.USER, RESELLER: item.RESELLER, API: item.API
+          },
+        }))
+    )
 
-    res
-      .status(200)
-      .json({ message: "All data plans updated successfully" });
+    res.status(200).json({ message: "All data plans updated successfully" });
   } catch (err) {
     console.error("Error updating data:", err);
     res
@@ -285,7 +267,7 @@ router.put("/update/plans", async (req, res) => {
 });
 
 
-      // Fetch data from API (Purchase Data Bundle)
+// Fetch data from API (Purchase Data Bundle)
 router.post("/purchase/bundle", async (req, res) => {
   const {
     plan,
@@ -450,22 +432,24 @@ router.post("/purchase/bundle", async (req, res) => {
       .json({ error: "Failed to fetch data from external API" });
   }
 });
-  
-          
+
+
 // get data transaction history
 router.get("/history", async (req, res) => {
   const userId = parseInt(req.user.id);
 
-    const result = await prisma.dataTransactionHist.findMany({ where: {id: userId},
+  const result = await prisma.dataTransactionHist.findMany({
+    where: { id: userId },
     select: {
       d_id: true, plan: true, phone_number: true, amount: true, balance_before: true, balance_after: true, status: true, time: true
-    }})
-    if (!result) {
-      console.error("Failed to select data transaction", err);
-      return res.status(500).json({ message: "Failed to select data transaction" });
     }
-    res.status(200).json(result);
-  });
+  })
+  if (!result) {
+    console.error("Failed to select data transaction", err);
+    return res.status(500).json({ message: "Failed to select data transaction" });
+  }
+  res.status(200).json(result);
+});
 
 
 export default router;
