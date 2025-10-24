@@ -105,7 +105,7 @@ router.post("/plans", async (req, res) => {
         data_type: true,
         validity: true,
         [packag]: true,
-      },
+      }
     });
 
     res.status(200).json(plans);
@@ -131,7 +131,10 @@ router.get("/all/plan", async (req, res) => {
         API: true,
         is_active: true,
       },
-      orderBy: { createdAt: "desc" }
+      orderBy: [
+        { network_name: "asc" },
+        { data_type: "asc" },
+      ]
     });
 
     res.status(200).json(result);
@@ -145,68 +148,83 @@ router.get("/all/plan", async (req, res) => {
 // Fetch MTN, Airtel, Glo, and 9Mobile data plans by network
 router.get("/plan", async (req, res) => {
   try {
-    const [mtn, airtel, glo, mobile] = await Promise.all([
-      prisma.data_plans.findMany({
-        where: { network_name: "MTN" },
-        select: {
-          d_id: true,
-          id: true,
-          name: true,
-          network_name: true,
-          data_type: true,
-          validity: true,
-          USER: true,
-          RESELLER: true,
-          API: true,
-          is_active: true,
-        },
-      }),
-      prisma.data_plans.findMany({
-        where: { network_name: "AIRTEL" },
-        select: {
-          d_id: true,
-          id: true,
-          name: true,
-          network_name: true,
-          data_type: true,
-          validity: true,
-          USER: true,
-          RESELLER: true,
-          API: true,
-          is_active: true,
-        },
-      }),
-      prisma.data_plans.findMany({
-        where: { network_name: "GLO" },
-        select: {
-          d_id: true,
-          id: true,
-          name: true,
-          network_name: true,
-          data_type: true,
-          validity: true,
-          USER: true,
-          RESELLER: true,
-          API: true,
-          is_active: true,
-        },
-      }),
-      prisma.data_plans.findMany({
-        where: { network_name: "9MOBILE" },
-        select: {
-          d_id: true,
-          id: true,
-          name: true,
-          network_name: true,
-          data_type: true,
-          validity: true,
-          USER: true,
-          RESELLER: true,
-          API: true,
-          is_active: true,
-        },
-      }),
-    ]);
+    // const [mtn, airtel, glo, mobile] = await Promise.all([
+    const mtn = await prisma.data_plans.findMany({
+      where: { network_name: "MTN" },
+      select: {
+        d_id: true,
+        id: true,
+        name: true,
+        network_name: true,
+        data_type: true,
+        validity: true,
+        USER: true,
+        RESELLER: true,
+        API: true,
+        is_active: true,
+      },
+      orderBy: [
+        { network_name: "asc" },
+        { data_type: "asc" },
+      ]
+    });
+    const airtel = await prisma.data_plans.findMany({
+      where: { network_name: "AIRTEL" },
+      select: {
+        d_id: true,
+        id: true,
+        name: true,
+        network_name: true,
+        data_type: true,
+        validity: true,
+        USER: true,
+        RESELLER: true,
+        API: true,
+        is_active: true,
+      },
+      orderBy: [
+        { network_name: "asc" },
+        { data_type: "asc" },
+      ]
+    });
+    const glo = await prisma.data_plans.findMany({
+      where: { network_name: "GLO" },
+      select: {
+        d_id: true,
+        id: true,
+        name: true,
+        network_name: true,
+        data_type: true,
+        validity: true,
+        USER: true,
+        RESELLER: true,
+        API: true,
+        is_active: true,
+      },
+      orderBy: [
+        { network_name: "asc" },
+        { data_type: "asc" },
+      ]
+    });
+    const mobile = await prisma.data_plans.findMany({
+      where: { network_name: "9MOBILE" },
+      select: {
+        d_id: true,
+        id: true,
+        name: true,
+        network_name: true,
+        data_type: true,
+        validity: true,
+        USER: true,
+        RESELLER: true,
+        API: true,
+        is_active: true,
+      },
+      orderBy: [
+        { network_name: "asc" },
+        { data_type: "asc" },
+      ]
+    });
 
     res.status(200).json({ mtn, airtel, glo, mobile });
   } catch (err) {
@@ -225,9 +243,7 @@ router.put("/update/sme/status", async (req, res) => {
       data: { is_active: isSmeActive },
     });
 
-    res
-      .status(200)
-      .json({ message: "SME data status updated successfully" });
+    res.status(200).json({ message: "SME data status updated successfully" });
   } catch (err) {
     console.error("Error updating SME data status", err.message);
     return res
@@ -391,6 +407,7 @@ router.post("/purchase/bundle", async (req, res) => {
 
     // 8. Refund if failed
     if (
+      !response.data.Status ||
       status === "failed" ||
       status === "Failed" ||
       status === "Fail" ||
@@ -401,7 +418,7 @@ router.post("/purchase/bundle", async (req, res) => {
         where: { d_id: userId },
         data: { user_balance: wallet },
       });
-      return res.status(502).json({ message: "Transaction failed", status });
+      return res.status(502).json({ message: "Transaction failed wallet refunded", status });
     }
 
     // 9. Save transaction history
@@ -426,10 +443,12 @@ router.post("/purchase/bundle", async (req, res) => {
 
     res.status(200).json({ message: "Data purchase successful" });
   } catch (err) {
-    console.error("Failed to fetch from API", err.message);
-    res
-      .status(500)
-      .json({ error: "Failed to fetch data from external API" });
+    console.error("Failed to fetch from API", err);
+    await prisma.users.update({
+        where: { d_id: userId },
+        data: { user_balance: wallet },
+      });
+    res.status(500).json({ error: "Failed to fetch data from external API, balance refunded" });
   }
 });
 
