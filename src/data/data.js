@@ -371,9 +371,7 @@ router.post("/purchase/bundle", async (req, res) => {
       select: { api_key: true, api_url: true },
     });
     if (!apiDocs) {
-      return res
-        .status(404)
-        .json({ message: "No API found for the given service type" });
+      return res.status(404).json({ message: "No API found for the given service type" });
     }
 
     const { api_key, api_url } = apiDocs;
@@ -418,6 +416,14 @@ router.post("/purchase/bundle", async (req, res) => {
         where: { d_id: userId },
         data: { user_balance: wallet },
       });
+      await prisma.dataTransactionHist.create({
+        data: {
+          id: userId, plan, phone_number: mobileNumber, amount: parseFloat(DataPrice),
+          balance_before: newBalance,
+          balance_after: wallet,
+          status: status.toString(),
+        }
+      })
       return res.status(502).json({ message: "Transaction failed wallet refunded", status });
     }
 
@@ -445,9 +451,17 @@ router.post("/purchase/bundle", async (req, res) => {
   } catch (err) {
     console.error("Failed to fetch from API", err);
     await prisma.users.update({
-        where: { d_id: userId },
-        data: { user_balance: wallet },
-      });
+      where: { d_id: userId },
+      data: { user_balance: wallet },
+    });
+    await prisma.dataTransactionHist.create({
+        data: {
+          id: userId, plan, phone_number: mobileNumber, amount: parseFloat(DataPrice),
+          balance_before: newBalance,
+          balance_after: wallet,
+          status: status.toString(),
+        }
+      })
     res.status(500).json({ error: "Failed to fetch data from external API, balance refunded" });
   }
 });
@@ -469,6 +483,7 @@ router.get("/history", async (req, res) => {
   }
   res.status(200).json(result);
 });
+
 
 
 export default router;
