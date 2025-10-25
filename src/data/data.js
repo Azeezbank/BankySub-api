@@ -422,6 +422,7 @@ router.post("/purchase/bundle", async (req, res) => {
           balance_before: newBalance,
           balance_after: wallet,
           status: status.toString(),
+          condition: "Failed"
         }
       })
       return res.status(502).json({ message: "Transaction failed wallet refunded", status });
@@ -437,6 +438,7 @@ router.post("/purchase/bundle", async (req, res) => {
         balance_before: wallet,
         balance_after: newBalance,
         status: status.toString(),
+        condition: "Successful"
       },
     });
 
@@ -460,6 +462,7 @@ router.post("/purchase/bundle", async (req, res) => {
           balance_before: newBalance,
           balance_after: wallet,
           status: status.toString(),
+          condition: "Fdailed"
         }
       })
     res.status(500).json({ error: "Failed to fetch data from external API, balance refunded" });
@@ -470,19 +473,62 @@ router.post("/purchase/bundle", async (req, res) => {
 // get data transaction history
 router.get("/history", async (req, res) => {
   const userId = parseInt(req.user.id);
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+try {
+  const total = await prisma.dataTransactionHist.count({
+    where: { id: userId },
+  });
 
   const result = await prisma.dataTransactionHist.findMany({
     where: { id: userId },
     select: {
-      d_id: true, plan: true, phone_number: true, amount: true, balance_before: true, balance_after: true, status: true, time: true
+      d_id: true, plan: true, phone_number: true, amount: true, balance_before: true, 
+      balance_after: true, status: true, time: true
+    },
+    take: limit,
+    skip,
+    orderBy: { createdAt: "desc" },
+  })
+  if (!result || result.length === 0) {
+    console.error("No data transaction found");
+    return res.status(500).json({ message: "No data transaction found" });
+  }
+  res.status(200).json({ result, total, totalPage: Math.ceil(total / limit), page, limit });
+} catch (err) {
+  console.error("Failed to fetch data transaction history", err);
+  return res.status(500).json({ message: "Failed to fetch data transaction history" });
+}
+});
+
+//Fetch all successful data transactions
+router.get("/all/successful/data", async (req, res) => {
+  try {
+    const result = await prisma.dataTransactionHist.findMany({ where: { condition: "Successful" }})
+      if (!result || result.length === 0) {
+        return res.status(404).json({ message: "No successful data transactions found" });
+      }
+      res.status(200).json(result);
+    } catch (err) {
+      console.error("Failed to fetch successful data transactions", err);
+      return res.status(500).json({ message: "Failed to fetch successful data transactions" });
     }
   })
-  if (!result) {
-    console.error("Failed to select data transaction", err);
-    return res.status(500).json({ message: "Failed to select data transaction" });
-  }
-  res.status(200).json(result);
-});
+
+  //Fetch failed data transactions
+router.get("/all/failed/data", async (req, res) => {
+  try {
+    const result = await prisma.dataTransactionHist.findMany({ where: { condition: "Failed" }});
+      if (!result || result.length === 0) {
+        return res.status(404).json({ message: "No failed data transactions found" });
+      }
+      res.status(200).json(result);
+    } catch (err) {
+      console.error("Failed to fetch failed data transactions", err);
+      return res.status(500).json({ message: "Failed to fetch failed data transactions" });
+    }
+})
 
 
 
