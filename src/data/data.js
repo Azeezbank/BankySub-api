@@ -476,6 +476,7 @@ router.get("/history", async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
+  const pageNum = 10;
   try {
     const total = await prisma.dataTransactionHist.count({
       where: { id: userId },
@@ -495,7 +496,7 @@ router.get("/history", async (req, res) => {
       console.error("No data transaction found");
       return res.status(500).json({ message: "No data transaction found" });
     }
-    res.status(200).json({ result, total, totalPage: Math.ceil(total / limit), page, limit });
+    res.status(200).json({ result, total, totalPage: Math.ceil(total / limit), page: total / pageNum, limit });
   } catch (err) {
     console.error("Failed to fetch data transaction history", err);
     return res.status(500).json({ message: "Failed to fetch data transaction history" });
