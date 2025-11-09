@@ -421,7 +421,7 @@ router.post("/purchase/bundle", async (req, res) => {
           id: userId, plan, phone_number: mobileNumber, amount: parseFloat(DataPrice),
           balance_before: newBalance,
           balance_after: wallet,
-          status: status || 'Failes',
+          status: status || 'Failed',
           condition: "Failed"
         }
       })
@@ -462,7 +462,7 @@ router.post("/purchase/bundle", async (req, res) => {
         balance_before: newBalance,
         balance_after: wallet,
         status: 'Failed',
-        condition: "Fdailed"
+        condition: "Failed"
       }
     })
     res.status(500).json({ error: "Failed to fetch data from external API, balance refunded" });
@@ -531,12 +531,20 @@ router.get("/all/successful/data", async (req, res) => {
 
 //Fetch failed data transactions
 router.get("/all/failed/data", async (req, res) => {
+   const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
   try {
+
+    const total = await prisma.dataTransactionHist.count({
+      where: { condition: "Failed" },
+    });
+
     const result = await prisma.dataTransactionHist.findMany({ where: { condition: "Failed" } });
     if (!result || result.length === 0) {
       return res.status(404).json({ message: "No failed data transactions found" });
     }
-    res.status(200).json(result);
+    res.status(200).json({ result, total, totalPage: Math.ceil(total / limit), page, limit});
   } catch (err) {
     console.error("Failed to fetch failed data transactions", err);
     return res.status(500).json({ message: "Failed to fetch failed data transactions" });
