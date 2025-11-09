@@ -48,7 +48,7 @@ router.get("/info", async (req, res) => {
   const userId = parseInt(req.user.id);
 
   try {
-    const user = await prisma.users.findUnique({
+    const user = await prisma.users.findFirst({
       where: { d_id: userId },
       select: {
         username: true,
