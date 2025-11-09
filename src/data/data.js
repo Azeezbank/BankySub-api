@@ -517,7 +517,7 @@ router.get("/all/successful/data", async (req, res) => {
       where: { condition: "Successful" },
       take: limit,
       skip,
-      orderBy: { createdAt: "desc" }
+      orderBy: { time: "desc" }
     })
     if (!result || result.length === 0) {
       return res.status(404).json({ message: "No successful data transactions found" });
@@ -540,7 +540,11 @@ router.get("/all/failed/data", async (req, res) => {
       where: { condition: "Failed" },
     });
 
-    const result = await prisma.dataTransactionHist.findMany({ where: { condition: "Failed" } });
+    const result = await prisma.dataTransactionHist.findMany({ where: { condition: "Failed" },
+      take: limit,
+      skip,
+      orderBy: { time: "desc"}
+     });
     if (!result || result.length === 0) {
       return res.status(404).json({ message: "No failed data transactions found" });
     }
