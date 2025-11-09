@@ -161,7 +161,7 @@ router.post('/verify/iuc', async (req, res) => {
 
     try {
         const apiDocs = await prisma.env.findFirst({ where: {service_type: providerId},
-        select: {api_key: true, select: api_url}
+        select: {api_key: true}
         });
 
         if (!apiDocs) {
