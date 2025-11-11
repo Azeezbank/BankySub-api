@@ -50,14 +50,14 @@ router.get("/info", async (req, res) => {
   try {
     const user = await prisma.users.findFirst({
       where: { d_id: userId },
-      select: {
-        username: true,
-        user_balance: true,
-        role: true,
-        packages: true,
-        cashback: true,
-        referree: true,
-      },
+      // select: {
+      //   username: true,
+      //   user_balance: true,
+      //   role: true,
+      //   packages: true,
+      //   cashback: true,
+      //   referree: true,
+      // },
     });
 
     if (!user) {
