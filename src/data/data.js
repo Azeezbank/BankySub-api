@@ -105,7 +105,8 @@ router.post("/plans", async (req, res) => {
         data_type: true,
         validity: true,
         [packag]: true,
-      }
+      },
+      orderBy: {[packag]: "asc"}
     });
 
     res.status(200).json(plans);
