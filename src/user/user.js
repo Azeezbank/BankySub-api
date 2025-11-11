@@ -45,19 +45,19 @@ router.get("/", async (req, res) => {
 
 // Select user details
 router.get("/info", async (req, res) => {
-  const userId = parseInt(req.user.id);
+  const userId = Number(req.user.id);
 
   try {
-    const user = await prisma.users.findFirst({
+    const user = await prisma.users.findUnique({
       where: { d_id: userId },
-      // select: {
-      //   username: true,
-      //   user_balance: true,
-      //   role: true,
-      //   packages: true,
-      //   cashback: true,
-      //   referree: true,
-      // },
+       select: {
+         username: true,
+         user_balance: true,
+         role: true,
+         packages: true,
+         cashback: true,
+         referree: true,
+       },
     });
 
     if (!user) {
