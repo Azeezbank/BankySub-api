@@ -134,7 +134,7 @@ router.get("/all/plan", async (req, res) => {
       orderBy: [
         { network_name: "asc" },
         { data_type: "asc" },
-        { name: "asc"},
+        { USER: "asc"},
       ]
     });
 
