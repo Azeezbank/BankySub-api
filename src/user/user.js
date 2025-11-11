@@ -93,7 +93,7 @@ router.put("/pin", async (req, res) => {
 
 // Select user bank details
 router.post("/bank/account", async (req, res) => {
-  const userId = parseInt(req.user.id);
+  const userId = Number(req.user.id);
 
   try {
     const bankDetails = await prisma.userBankDetails1.findFirst({
