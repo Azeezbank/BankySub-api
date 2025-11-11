@@ -88,7 +88,7 @@ model data_types {
 
 model env {
   d_id         Int     @id @default(autoincrement())
-  service_type String? @db.Text
+  service_type String   @unique
   api_key      String? @db.Text
   api_url      String? @db.Text
 }

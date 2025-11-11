@@ -294,12 +294,15 @@ router.post("/purchase/bundle", async (req, res) => {
     pin,
   } = req.body;
   const userId = parseInt(req.user.id);
+  let wallet = 0;
+  let newBalance = 0;
+
 
   try {
     // 1. Get user details
     const user = await prisma.users.findFirst({
       where: { d_id: userId },
-      select: { packages: true, user_balance: true, Pin: true },
+      select: { packages: true, user_balance: true, Pin: true, cashback: true },
     });
 
     if (!user) {
@@ -382,11 +385,11 @@ router.post("/purchase/bundle", async (req, res) => {
     };
 
     // 6. Wallet check
-    const wallet = parseFloat(user.user_balance.toString());
+    wallet = parseFloat(user.user_balance.toString());
     if (wallet < parseFloat(DataPrice)) {
       return res.status(400).json({ message: "Insufficient wallet balance" });
     }
-    const newBalance = wallet - parseFloat(DataPrice);
+    newBalance = wallet - parseFloat(DataPrice);
 
     await prisma.users.update({
       where: { d_id: userId },
@@ -443,15 +446,23 @@ router.post("/purchase/bundle", async (req, res) => {
     });
 
     // 10. Reward cashback
-    const cashBack = (0.2 / 100) * parseFloat(DataPrice);
-    await prisma.users.update({
-      where: { d_id: userId },
-      data: { cashback: { increment: cashBack } },
-    });
+    try {
+      const cashBack = (0.2 / 100) * parseFloat(DataPrice);
+      const currentCashBack = Number(user.cashback); //convert to Js number
+      const totalCashBack = currentCashBack + cashBack;
 
-    res.status(200).json({ message: "Data purchase successful" });
+      await prisma.users.update({
+        where: { d_id: userId },
+        data: { cashback: totalCashBack.toFixed(2) },
+      });
+    } catch (err) {
+      console.error("CashBack failed, but transaction successful", err)
+    }
+
+    return res.status(200).json({ message: "Data purchase successful" });
   } catch (err) {
     console.error("Failed to fetch from API", err);
+
     await prisma.users.update({
       where: { d_id: userId },
       data: { user_balance: wallet },
@@ -465,7 +476,8 @@ router.post("/purchase/bundle", async (req, res) => {
         condition: "Failed"
       }
     })
-    res.status(500).json({ error: "Failed to fetch data from external API, balance refunded" });
+
+    return res.status(500).json({ error: "Failed to fetch data from external API, balance refunded" });
   }
 });
 
@@ -531,7 +543,7 @@ router.get("/all/successful/data", async (req, res) => {
 
 //Fetch failed data transactions
 router.get("/all/failed/data", async (req, res) => {
-   const page = parseInt(req.query.page) || 1;
+  const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
   try {
@@ -540,15 +552,16 @@ router.get("/all/failed/data", async (req, res) => {
       where: { condition: "Failed" },
     });
 
-    const result = await prisma.dataTransactionHist.findMany({ where: { condition: "Failed" },
+    const result = await prisma.dataTransactionHist.findMany({
+      where: { condition: "Failed" },
       take: limit,
       skip,
-      orderBy: { createdAt: "desc"}
-     });
+      orderBy: { createdAt: "desc" }
+    });
     if (!result || result.length === 0) {
       return res.status(404).json({ message: "No failed data transactions found" });
     }
-    res.status(200).json({ result, total, totalPage: Math.ceil(total / limit), page, limit});
+    res.status(200).json({ result, total, totalPage: Math.ceil(total / limit), page, limit });
   } catch (err) {
     console.error("Failed to fetch failed data transactions", err);
     return res.status(500).json({ message: "Failed to fetch failed data transactions" });
